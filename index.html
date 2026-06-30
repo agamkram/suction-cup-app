@@ -687,10 +687,6 @@
       return hpa * HPA_TO_PSI;
     }
 
-    function diameterFromAreaSqIn(areaSqIn) {
-      return 2 * Math.sqrt(areaSqIn / Math.PI);
-    }
-
     function pullForceLbs(psi, areaSqIn, sealPct) {
       return psi * areaSqIn * (sealPct / 100);
     }
@@ -755,7 +751,6 @@
       forceInlineEl.textContent = `${force.toFixed(2)} lbs`;
       forceAreaInlineEl.textContent = `${areaSqIn.toFixed(1)} sq in`;
 
-      const diameterIn = diameterFromAreaSqIn(areaSqIn);
       areaReadoutEl.textContent = `${areaSqIn.toFixed(1)} sq in`;
       sealReadoutEl.textContent = sealLabel(sealPct);
 
