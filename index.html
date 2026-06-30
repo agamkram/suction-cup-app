@@ -39,6 +39,16 @@
       --card-pad-y: 0.5rem;
       --card-pad-x: 0.65rem;
       --card-gap: 0.35rem;
+      --text-title: 1.15rem;
+      --text-prose: 0.95rem;
+      --text-tip: 0.82rem;
+      --text-control-title: 0.75rem;
+      --text-control-value: 0.72rem;
+      --text-stat: 0.9rem;
+      --text-stat-lg: 1rem;
+      --text-label: 0.62rem;
+      --text-location: 0.72rem;
+      --text-location-elev: 0.75rem;
     }
 
     * {
@@ -86,11 +96,11 @@
     }
 
     .intro {
-      font-size: clamp(1rem, 4.2vw, 1.2rem);
+      font-size: var(--text-title);
       font-weight: 700;
       letter-spacing: -0.03em;
       color: var(--text);
-      line-height: 1.25;
+      line-height: 1.3;
       text-align: center;
     }
 
@@ -105,7 +115,7 @@
     }
 
     .location-text {
-      font-size: 0.68rem;
+      font-size: var(--text-location);
       color: var(--muted);
       max-width: 100%;
       overflow: hidden;
@@ -114,6 +124,7 @@
     }
 
     .location-text strong {
+      font-size: var(--text-location-elev);
       color: var(--accent);
       font-weight: 600;
     }
@@ -154,10 +165,8 @@
     }
 
     .panel-label {
-      font-size: 0.54rem;
+      font-size: var(--text-label);
       font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.07em;
       color: var(--muted);
       margin-bottom: 0.2rem;
     }
@@ -225,9 +234,9 @@
     }
 
     .pressure-note {
-      font-size: 1.07rem;
+      font-size: var(--text-prose);
       color: var(--muted);
-      line-height: 1.2;
+      line-height: 1.35;
     }
 
     .pressure-inline {
@@ -240,9 +249,16 @@
     }
 
     .force-note {
-      font-size: 1.07rem;
+      font-size: var(--text-prose);
       color: var(--muted);
-      line-height: 1.2;
+      line-height: 1.35;
+    }
+
+    .force-tip {
+      margin-top: 0.35rem;
+      font-size: var(--text-tip);
+      color: var(--muted);
+      line-height: 1.35;
     }
 
     .force-inline,
@@ -253,28 +269,29 @@
 
     .result-card .cup-controls-row {
       margin-top: 0.55rem;
+      padding-top: 0.55rem;
+      border-top: 1px solid var(--border);
     }
 
     .control-head {
       display: flex;
-      justify-content: space-between;
+      flex-direction: column;
       align-items: flex-start;
-      gap: var(--card-gap);
+      gap: 0.08rem;
       margin-bottom: var(--card-gap);
     }
 
     .control-title {
-      font-size: 0.72rem;
+      font-size: var(--text-control-title);
       font-weight: 600;
     }
 
     .control-value {
-      font-size: 0.68rem;
+      font-size: var(--text-control-value);
       font-weight: 600;
       color: var(--accent);
-      text-align: right;
-      flex: 1 1 42%;
-      min-width: 0;
+      text-align: left;
+      width: 100%;
       line-height: 1.25;
     }
 
@@ -297,26 +314,6 @@
 
     .cup-control {
       min-width: 0;
-    }
-
-    .cup-control .control-head {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 0.08rem;
-    }
-
-    .cup-control .control-value {
-      text-align: left;
-      flex: none;
-      width: 100%;
-    }
-
-    .weight-card .control-title {
-      font-size: 0.8rem;
-    }
-
-    .weight-card .control-value {
-      font-size: 0.8rem;
     }
 
     .teach-copy {
@@ -342,11 +339,14 @@
     }
 
     .air-yd-total .air-stat-value {
-      font-size: 1.05rem;
+      font-size: var(--text-stat-lg);
     }
 
-    .air-constituents-label {
-      margin-bottom: 0.2rem;
+    .air-breakdown {
+      margin-bottom: 0.25rem;
+      font-size: var(--text-tip);
+      color: var(--muted);
+      line-height: 1.35;
     }
 
     .air-stat {
@@ -359,16 +359,15 @@
     }
 
     .air-stat-label {
-      font-size: 0.54rem;
+      font-size: var(--text-label);
       color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
       font-weight: 600;
+      line-height: 1.25;
     }
 
     .air-stat-value {
       margin-top: 0.08rem;
-      font-size: 0.95rem;
+      font-size: var(--text-stat);
       font-weight: 700;
       color: var(--air);
       letter-spacing: -0.03em;
@@ -455,18 +454,13 @@
         --card-pad-y: 0.42rem;
         --card-pad-x: 0.55rem;
         --card-gap: 0.3rem;
+        --text-title: 1.05rem;
+        --text-prose: 0.9rem;
+        --text-tip: 0.78rem;
       }
 
       .app {
         gap: var(--card-gap);
-      }
-
-      .intro {
-        font-size: clamp(0.9rem, 3.8vw, 1rem);
-      }
-
-      .teach-copy {
-        font-size: 0.58rem;
       }
     }
   </style>
@@ -513,13 +507,15 @@
 
     <section class="card result-card" aria-live="polite">
       <p class="force-note" id="force-note">
-        You would have to pull with a force of <span class="force-inline" id="force-inline">—</span> to remove a <span class="force-area-inline" id="force-area-inline">—</span> suction cup. Move the sliders to change cup area and efficiency. Change location from seashore to mountaintop, what a difference!
+        You would have to pull with a force of <span class="force-inline" id="force-inline">—</span> to remove a <span class="force-area-inline" id="force-area-inline">—</span> suction cup.
       </p>
+      <p class="force-tip">Move the sliders to change cup area and efficiency.</p>
+      <p class="force-tip">Change location from seashore to mountaintop, what a difference!</p>
       <div class="cup-controls-row">
         <div class="cup-control">
           <div class="control-head">
             <span class="control-title">Suction cup size</span>
-            <span class="control-value" id="area-readout">1.0 sq in · 1.13″ dia</span>
+            <span class="control-value" id="area-readout">1.0 sq in</span>
           </div>
           <input
             type="range"
@@ -580,7 +576,7 @@
         <div class="air-stat-label">Weight of air per cubic yard</div>
         <div class="air-stat-value" id="air-yd">—</div>
       </div>
-      <div class="panel-label air-constituents-label">Constituents</div>
+      <p class="air-breakdown">That cubic yard breaks down as:</p>
       <div class="air-row">
         <div class="air-stat">
           <div class="air-stat-label">Nitrogen N<sub>2</sub></div>
@@ -760,7 +756,7 @@
       forceAreaInlineEl.textContent = `${areaSqIn.toFixed(1)} sq in`;
 
       const diameterIn = diameterFromAreaSqIn(areaSqIn);
-      areaReadoutEl.textContent = `${areaSqIn.toFixed(1)} sq in · ${diameterIn.toFixed(2)}″ dia`;
+      areaReadoutEl.textContent = `${areaSqIn.toFixed(1)} sq in`;
       sealReadoutEl.textContent = sealLabel(sealPct);
 
       airYdEl.textContent = `${lbPerYd.toFixed(2)} lb`;
