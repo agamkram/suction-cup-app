@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+  />
+  <meta name="theme-color" content="#0f1419" />
+  <meta
+    name="description"
+    content="Feel the weight of the atmosphere above you. Live pressure at your location and the pull force on a suction cup."
+  />
+  <title>The Weight of Air and the Suction Cup</title>
+  <link rel="preconnect" href="https://api.open-meteo.com" crossorigin />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap"
+    rel="stylesheet"
+  />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    crossorigin=""
+  />
+  <style>
+    :root {
+      --bg: #0f1419;
+      --surface: #1a2332;
+      --surface-2: #243044;
+      --text: #e8edf4;
+      --muted: #8b9cb3;
+      --accent: #3d9cf5;
+      --force: #f59e0b;
+      --air: #4ade80;
+      --border: rgba(255, 255, 255, 0.08);
+      --arrow: rgba(61, 156, 245, 0.7);
+      --card-pad-y: 0.5rem;
+      --card-pad-x: 0.65rem;
+      --card-gap: 0.35rem;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      min-height: 100%;
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+    }
+
+    body {
+      font-family: "DM Sans", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+
+    .app {
+      min-height: 100dvh;
+      width: min(100%, 520px);
+      margin: 0 auto;
+      padding:
+        max(0.45rem, env(safe-area-inset-top))
+        max(0.75rem, env(safe-area-inset-right))
+        max(0.45rem, env(safe-area-inset-bottom))
+        max(0.75rem, env(safe-area-inset-left));
+      display: flex;
+      flex-direction: column;
+      gap: 0.42rem;
+    }
+
+    .app > * {
+      flex-shrink: 0;
+      width: 100%;
+    }
+
+    header {
+      text-align: center;
+    }
+
+    .intro {
+      font-size: clamp(1rem, 4.2vw, 1.2rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: var(--text);
+      line-height: 1.25;
+      text-align: center;
+    }
+
+    .location-row {
+      margin-top: 0.3rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      flex-wrap: wrap;
+      min-height: 1.2rem;
+    }
+
+    .location-text {
+      font-size: 0.68rem;
+      color: var(--muted);
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .location-text strong {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .icon-btn,
+    .link-btn {
+      appearance: none;
+      border: none;
+      background: transparent;
+      color: var(--accent);
+      font: inherit;
+      font-size: 0.68rem;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 0.1rem 0.2rem;
+    }
+
+    .icon-btn {
+      font-size: 0.85rem;
+      line-height: 1;
+      padding: 0.1rem 0.25rem;
+    }
+
+    .icon-btn:hover,
+    .link-btn:hover,
+    .icon-btn:focus-visible,
+    .link-btn:focus-visible {
+      outline: none;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: var(--card-pad-y) var(--card-pad-x);
+    }
+
+    .panel-label {
+      font-size: 0.54rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--muted);
+      margin-bottom: 0.2rem;
+    }
+
+    .pressure-card {
+      display: grid;
+      grid-template-columns: minmax(96px, 36%) 1fr;
+      gap: 0.45rem;
+      align-items: center;
+    }
+
+    .pressure-illus {
+      max-width: 96px;
+      line-height: 0;
+    }
+
+    .pressure-illus svg {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .pressure-arrow {
+      stroke: var(--arrow);
+      stroke-width: 1.6;
+      stroke-linecap: round;
+      fill: var(--arrow);
+      opacity: 0.5;
+      animation: arrow-pulse 2.8s ease-in-out infinite;
+    }
+
+    .pressure-arrow.delay-a {
+      animation-delay: 0.9s;
+    }
+
+    .pressure-arrow.delay-b {
+      animation-delay: 1.8s;
+    }
+
+    @keyframes arrow-pulse {
+      0%, 100% {
+        opacity: 0.28;
+      }
+      50% {
+        opacity: 0.95;
+      }
+    }
+
+    .earth-ocean {
+      fill: url(#ocean);
+    }
+
+    .earth-land {
+      fill: #52a86c;
+    }
+
+    .earth-atmo {
+      fill: none;
+      stroke: rgba(120, 190, 255, 0.45);
+      stroke-width: 1.2;
+    }
+
+    .pressure-data {
+      text-align: left;
+    }
+
+    .pressure-note {
+      font-size: 1.07rem;
+      color: var(--muted);
+      line-height: 1.2;
+    }
+
+    .pressure-inline {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .result-card {
+      text-align: left;
+    }
+
+    .force-note {
+      font-size: 1.07rem;
+      color: var(--muted);
+      line-height: 1.2;
+    }
+
+    .force-inline,
+    .force-area-inline {
+      color: var(--force);
+      font-weight: 600;
+    }
+
+    .result-card .cup-controls-row {
+      margin-top: 0.55rem;
+    }
+
+    .control-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: var(--card-gap);
+      margin-bottom: var(--card-gap);
+    }
+
+    .control-title {
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+
+    .control-value {
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: var(--accent);
+      text-align: right;
+      flex: 1 1 42%;
+      min-width: 0;
+      line-height: 1.25;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      cursor: pointer;
+      height: 1.2rem;
+    }
+
+    #seal-slider {
+      direction: rtl;
+    }
+
+    .cup-controls-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--card-gap);
+    }
+
+    .cup-control {
+      min-width: 0;
+    }
+
+    .cup-control .control-head {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.08rem;
+    }
+
+    .cup-control .control-value {
+      text-align: left;
+      flex: none;
+      width: 100%;
+    }
+
+    .weight-card .control-title {
+      font-size: 0.8rem;
+    }
+
+    .weight-card .control-value {
+      font-size: 0.8rem;
+    }
+
+    .teach-copy {
+      margin-top: 0.3rem;
+      font-size: 0.62rem;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+    .air-row,
+    .person-results {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--card-gap);
+    }
+
+    .person-results {
+      margin-top: 0.4rem;
+    }
+
+    .air-yd-total {
+      margin-bottom: var(--card-gap);
+    }
+
+    .air-yd-total .air-stat-value {
+      font-size: 1.05rem;
+    }
+
+    .air-constituents-label {
+      margin-bottom: 0.2rem;
+    }
+
+    .air-stat {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.4rem 0.5rem;
+      text-align: center;
+      min-width: 0;
+    }
+
+    .air-stat-label {
+      font-size: 0.54rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 600;
+    }
+
+    .air-stat-value {
+      margin-top: 0.08rem;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--air);
+      letter-spacing: -0.03em;
+    }
+
+    .location-text.error {
+      color: #f87171;
+    }
+
+    .location-dialog {
+      border: none;
+      border-radius: 14px;
+      padding: 1rem;
+      background: var(--surface);
+      color: var(--text);
+      max-width: 480px;
+      width: calc(100% - 2rem);
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+    }
+
+    .location-dialog::backdrop {
+      background: rgba(0, 0, 0, 0.6);
+    }
+
+    .location-dialog h2 {
+      font-size: 1rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .map-hint {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-bottom: 0.55rem;
+    }
+
+    .location-map {
+      width: 100%;
+      height: 220px;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: var(--bg);
+    }
+
+    .map-coords {
+      margin-top: 0.5rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--accent);
+      text-align: center;
+    }
+
+    .dialog-actions {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: flex-end;
+      margin-top: 0.5rem;
+    }
+
+    .primary-btn,
+    .secondary-btn {
+      font: inherit;
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 0.5rem 0.9rem;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .primary-btn {
+      border: none;
+      background: var(--accent);
+      color: #061018;
+    }
+
+    .secondary-btn {
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--text);
+    }
+
+    @media (max-height: 680px) {
+      :root {
+        --card-pad-y: 0.42rem;
+        --card-pad-x: 0.55rem;
+        --card-gap: 0.3rem;
+      }
+
+      .app {
+        gap: var(--card-gap);
+      }
+
+      .intro {
+        font-size: clamp(0.9rem, 3.8vw, 1rem);
+      }
+
+      .teach-copy {
+        font-size: 0.58rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1 class="intro">The Weight of Air and the Suction Cup</h1>
+      <div class="location-row">
+        <button type="button" class="icon-btn" id="locate-btn" title="Use current location" aria-label="Use current location">◎</button>
+        <span class="location-text" id="location-text">Finding your location…</span>
+        <button type="button" class="link-btn" id="choose-location-btn">Choose</button>
+      </div>
+    </header>
+
+    <section class="card pressure-card" aria-live="polite">
+      <div class="pressure-illus" aria-hidden="true">
+        <svg viewBox="21 21 58 58" role="img" aria-label="Earth with atmospheric pressure arrows from all directions">
+          <defs>
+            <radialGradient id="ocean" cx="38%" cy="36%" r="68%">
+              <stop offset="0%" stop-color="#4ca3e0" />
+              <stop offset="100%" stop-color="#1a5f8a" />
+            </radialGradient>
+          </defs>
+
+          <g id="pressure-arrows"></g>
+
+          <g id="earth" transform="translate(32 32)">
+            <circle class="earth-ocean" cx="18" cy="18" r="18" />
+            <path
+              class="earth-land"
+              d="M30.13 23.748c-1.017-.39-.836-.248-1.463-1.581-.627-1.332-1.007-1.761-2.417-1.917-1.411-.155-1.358-.045-1.75-.75-.392-.706-1.982.191-3 .584-1.021.392-.769 1.246-1.083 1.166-.315-.078-1.107-.281-1.893-.907-.784-.628.583-1.118.976-1.509.393-.393-.74-.179-1.133-.416-.393-.234-1.096.471-1.723-.158-.628-.627-.235-1.568-.313-2.352-.079-.785 1.018-.941 1.724-1.098.705-.156 1.253.001 1.253.941 0 .941.863 1.255.628.156s.235-1.411.55-1.96c.313-.549.862-1.334 1.567-2.51.706-1.176 1.177-.628 2.039-.544.863.085 1.098-.083 1.725-.004.625.079 0-.784.236-1.646.234-.862 1.097-.706 1.961-.47.862.235-.864-1.099-1.177-1.804-.315-.706-1.177 0-1.724-1.176-.553-1.176-1.324-1.937-2.03-2.042-.706-.106.225 1.494-.324 2.356-.551.862-1.395.727-2.26.727-.861 0-1.661-.727-1.033-1.825.626-1.097 1.823-.984 2.45-1.925.628-.94-2.23-.854-3.25-1.167-1.02-.314-2.244-.311-3.263.473-1.02.783-3.201 1.028-4.064 1.341-.862.313-1.017-.52-1.173-1.148-.07-.279-.388-.367-.836-.357C7.11 3.45 5.187 5.138 3.664 7.147c.237.807 1.385-.189 1.61-.414.235-.235 1.411.079 1.567.941.157.862.079 1.805-.234 2.589-.314.783.784 1.881 1.411 2.979.628 1.099 1.333 1.098 1.647 1.098.313 0 2.117.706 2.038 1.568-.078.863 1.647 1.646 2.353 2.195.706.551 1.152 1.092 2.068 1.25.917.158 1.989 1.657 2.459 1.815.361.12.972.697 1.341.876-.485.614-1.424 1.875-1.424 2.456 0 .786 1.025 2.021 1.417 2.334.391.312 1.517.55 1.75 1.333.236.784-.164 3.423-.868 4.128-.708.705-.965 2.372-.965 2.372s.249.541 1.083 0C21.839 34.07 23.383 32.37 24 32c1.176-.707 2.319-1.565 3.417-2.583 1.098-1.019.7-1.733 1.25-2.75.549-1.019 1.259-.973 2.199-1.833.942-.864.284-.693-.736-1.086z"
+            />
+            <circle class="earth-atmo" cx="18" cy="18" r="19.5" />
+          </g>
+        </svg>
+      </div>
+      <div class="pressure-data">
+        <p class="pressure-note" id="pressure-note">
+          The air above you is heavier than you might think, <span class="pressure-inline" id="pressure-inline">—</span> in fact. This force exists on every square inch of everything around you!
+        </p>
+      </div>
+    </section>
+
+    <section class="card result-card" aria-live="polite">
+      <p class="force-note" id="force-note">
+        You would have to pull with a force of <span class="force-inline" id="force-inline">—</span> to remove a <span class="force-area-inline" id="force-area-inline">—</span> suction cup. Move the sliders to change cup area and efficiency. Change location from seashore to mountaintop, what a difference!
+      </p>
+      <div class="cup-controls-row">
+        <div class="cup-control">
+          <div class="control-head">
+            <span class="control-title">Suction cup size</span>
+            <span class="control-value" id="area-readout">1.0 sq in · 1.13″ dia</span>
+          </div>
+          <input
+            type="range"
+            id="area-slider"
+            min="1"
+            max="28"
+            step="0.1"
+            value="1"
+            aria-label="Suction cup size in square inches"
+          />
+        </div>
+        <div class="cup-control">
+          <div class="control-head">
+            <span class="control-title">Vacuum percentage</span>
+            <span class="control-value" id="seal-readout">100% · Ideal suction cup</span>
+          </div>
+          <input
+            type="range"
+            id="seal-slider"
+            min="80"
+            max="100"
+            step="1"
+            value="100"
+            aria-label="Vacuum percentage"
+          />
+        </div>
+      </div>
+    </section>
+
+    <section class="card weight-card" aria-live="polite">
+      <div class="control-head">
+        <span class="control-title">Your weight</span>
+        <span class="control-value" id="weight-readout">150 lbs</span>
+      </div>
+      <input
+        type="range"
+        id="weight-slider"
+        min="5"
+        max="300"
+        step="1"
+        value="150"
+        aria-label="Body weight in pounds"
+      />
+      <div class="person-results">
+        <div class="air-stat">
+          <div class="air-stat-label">Body surface area</div>
+          <div class="air-stat-value" id="body-area">—</div>
+        </div>
+        <div class="air-stat">
+          <div class="air-stat-label">Weight of air on you</div>
+          <div class="air-stat-value" id="body-air-weight">—</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card" aria-live="polite">
+      <div class="air-stat air-yd-total">
+        <div class="air-stat-label">Weight of air per cubic yard</div>
+        <div class="air-stat-value" id="air-yd">—</div>
+      </div>
+      <div class="panel-label air-constituents-label">Constituents</div>
+      <div class="air-row">
+        <div class="air-stat">
+          <div class="air-stat-label">Nitrogen N<sub>2</sub></div>
+          <div class="air-stat-value" id="air-n2">—</div>
+        </div>
+        <div class="air-stat">
+          <div class="air-stat-label">Oxygen O<sub>2</sub></div>
+          <div class="air-stat-value" id="air-o2">—</div>
+        </div>
+        <div class="air-stat">
+          <div class="air-stat-label">Argon Ar</div>
+          <div class="air-stat-value" id="air-ar">—</div>
+        </div>
+        <div class="air-stat">
+          <div class="air-stat-label">Carbon Dioxide CO<sub>2</sub></div>
+          <div class="air-stat-value" id="air-co2">—</div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <dialog id="location-dialog" class="location-dialog">
+    <form method="dialog" id="location-form">
+      <h2>Choose location</h2>
+      <p class="map-hint">Tap or click the map to place a pin</p>
+      <div id="location-map" class="location-map" role="application" aria-label="Location map"></div>
+      <p class="map-coords" id="map-coords">—</p>
+      <div class="dialog-actions">
+        <button type="button" class="secondary-btn" id="cancel-location">Cancel</button>
+        <button type="submit" class="primary-btn">Apply</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script>
+    const HPA_TO_PSI = 0.0145037738;
+    const IDEAL_SEAL_PCT = 100;
+    const GOOD_SEAL_PCT = 80;
+    const AVG_BMI = 23;
+    const SQ_IN_PER_SQ_M = 1550.0031;
+    const AIR_MOLAR_MASS = 28.964;
+    const CU_FT_PER_CU_YD = 27;
+    const GAS_COMPONENTS = [
+      { id: "n2", moleFrac: 0.78084, molarMass: 28.014 },
+      { id: "o2", moleFrac: 0.20946, molarMass: 31.998 },
+      { id: "ar", moleFrac: 0.00934, molarMass: 39.948 },
+      { id: "co2", moleFrac: 0.00042, molarMass: 44.01 },
+    ];
+
+    const state = {
+      lat: null,
+      lon: null,
+      elevationM: null,
+      pressureHpa: null,
+      tempC: null,
+      areaSqIn: 1,
+      sealPct: IDEAL_SEAL_PCT,
+      personWeightLb: 150,
+    };
+
+    let locationMap = null;
+    let locationMarker = null;
+    let pickLat = null;
+    let pickLon = null;
+
+    const locationTextEl = document.getElementById("location-text");
+    const pressureInlineEl = document.getElementById("pressure-inline");
+
+    const forceInlineEl = document.getElementById("force-inline");
+    const forceAreaInlineEl = document.getElementById("force-area-inline");
+    const areaSliderEl = document.getElementById("area-slider");
+    const areaReadoutEl = document.getElementById("area-readout");
+    const sealSliderEl = document.getElementById("seal-slider");
+    const sealReadoutEl = document.getElementById("seal-readout");
+
+    const airYdEl = document.getElementById("air-yd");
+    const airGasEls = {
+      n2: document.getElementById("air-n2"),
+      o2: document.getElementById("air-o2"),
+      ar: document.getElementById("air-ar"),
+      co2: document.getElementById("air-co2"),
+    };
+    const weightSliderEl = document.getElementById("weight-slider");
+    const weightReadoutEl = document.getElementById("weight-readout");
+    const bodyAreaEl = document.getElementById("body-area");
+    const bodyAirWeightEl = document.getElementById("body-air-weight");
+    const locateBtn = document.getElementById("locate-btn");
+    const chooseLocationBtn = document.getElementById("choose-location-btn");
+    const locationDialog = document.getElementById("location-dialog");
+    const locationForm = document.getElementById("location-form");
+    const cancelLocationBtn = document.getElementById("cancel-location");
+    const mapCoordsEl = document.getElementById("map-coords");
+
+    function formatCoord(value, positive, negative) {
+      const abs = Math.abs(value).toFixed(2);
+      return `${abs}° ${value >= 0 ? positive : negative}`;
+    }
+
+    function formatElevation(meters) {
+      if (typeof meters !== "number") return null;
+      const feet = Math.round(meters * 3.28084);
+      return `${feet.toLocaleString()} ft`;
+    }
+
+    function hpaToPsi(hpa) {
+      return hpa * HPA_TO_PSI;
+    }
+
+    function diameterFromAreaSqIn(areaSqIn) {
+      return 2 * Math.sqrt(areaSqIn / Math.PI);
+    }
+
+    function pullForceLbs(psi, areaSqIn, sealPct) {
+      return psi * areaSqIn * (sealPct / 100);
+    }
+
+    function bodySurfaceAreaSqIn(weightLb) {
+      const weightKg = weightLb / 2.20462;
+      const heightCm = Math.sqrt(weightKg / AVG_BMI) * 100;
+      const bsaSqM = Math.sqrt((heightCm * weightKg) / 3600);
+      return bsaSqM * SQ_IN_PER_SQ_M;
+    }
+
+    function totalAirWeightLbs(psi, surfaceAreaSqIn) {
+      return psi * surfaceAreaSqIn;
+    }
+
+    function airDensityLbPerCuFt(hpa, tempC) {
+      const pressurePa = hpa * 100;
+      const tempK = tempC + 273.15;
+      const densityKgM3 = pressurePa / (287.058 * tempK);
+      return densityKgM3 * 0.06242796;
+    }
+
+    function gasMassLbPerCuYd(totalLbPerCuYd, moleFrac, molarMass) {
+      const massFraction = (moleFrac * molarMass) / AIR_MOLAR_MASS;
+      return totalLbPerCuYd * massFraction;
+    }
+
+    function formatGasMass(lbs) {
+      if (lbs < 0.01) return `${lbs.toFixed(4)} lb`;
+      if (lbs < 1) return `${lbs.toFixed(3)} lb`;
+      return `${lbs.toFixed(2)} lb`;
+    }
+
+    function sealLabel(pct) {
+      if (pct === IDEAL_SEAL_PCT) return `${pct}% · Ideal suction cup`;
+      if (pct === GOOD_SEAL_PCT) return `${pct}% · Typical suction cup`;
+      return `${pct}%`;
+    }
+
+    function updatePersonReadouts(psi) {
+      const bodyAreaSqIn = bodySurfaceAreaSqIn(state.personWeightLb);
+
+      weightReadoutEl.textContent = `${state.personWeightLb} lbs`;
+      bodyAreaEl.textContent = `${bodyAreaSqIn.toFixed(0)} sq in`;
+      bodyAirWeightEl.textContent =
+        psi == null ? "—" : `${totalAirWeightLbs(psi, bodyAreaSqIn).toFixed(2)} lbs`;
+    }
+
+    function updateReadouts() {
+      const { pressureHpa, tempC, areaSqIn, sealPct } = state;
+      const psi = pressureHpa == null ? null : hpaToPsi(pressureHpa);
+
+      updatePersonReadouts(psi);
+
+      if (pressureHpa == null) return;
+
+      const force = pullForceLbs(psi, areaSqIn, sealPct);
+      const lbPerYd = airDensityLbPerCuFt(pressureHpa, tempC ?? 15) * CU_FT_PER_CU_YD;
+
+      pressureInlineEl.textContent = `${psi.toFixed(2)} pounds per square inch`;
+
+      forceInlineEl.textContent = `${force.toFixed(2)} lbs`;
+      forceAreaInlineEl.textContent = `${areaSqIn.toFixed(1)} sq in`;
+
+      const diameterIn = diameterFromAreaSqIn(areaSqIn);
+      areaReadoutEl.textContent = `${areaSqIn.toFixed(1)} sq in · ${diameterIn.toFixed(2)}″ dia`;
+      sealReadoutEl.textContent = sealLabel(sealPct);
+
+      airYdEl.textContent = `${lbPerYd.toFixed(2)} lb`;
+
+      GAS_COMPONENTS.forEach(({ id, moleFrac, molarMass }) => {
+        const mass = gasMassLbPerCuYd(lbPerYd, moleFrac, molarMass);
+        airGasEls[id].textContent = formatGasMass(mass);
+      });
+    }
+
+    function setLocationText(html, isError = false) {
+      locationTextEl.innerHTML = html;
+      locationTextEl.classList.toggle("error", isError);
+    }
+
+    async function fetchWeather(lat, lon) {
+      const url = new URL("https://api.open-meteo.com/v1/forecast");
+      url.searchParams.set("latitude", String(lat));
+      url.searchParams.set("longitude", String(lon));
+      url.searchParams.set("current", "surface_pressure,temperature_2m");
+      url.searchParams.set("timezone", "auto");
+
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("Could not fetch atmospheric pressure.");
+
+      const data = await response.json();
+      const pressure = data?.current?.surface_pressure;
+      const temp = data?.current?.temperature_2m;
+
+      if (typeof pressure !== "number") {
+        throw new Error("Pressure data unavailable for this location.");
+      }
+
+      state.pressureHpa = pressure;
+      state.tempC = typeof temp === "number" ? temp : 15;
+      state.elevationM = typeof data.elevation === "number" ? data.elevation : null;
+      updateReadouts();
+    }
+
+    async function loadLocation(lat, lon) {
+      state.lat = lat;
+      state.lon = lon;
+
+      const latText = formatCoord(lat, "N", "S");
+      const lonText = formatCoord(lon, "E", "W");
+      setLocationText(`Loading ${latText}, ${lonText}…`);
+
+      try {
+        await fetchWeather(lat, lon);
+        const elevation = formatElevation(state.elevationM);
+        const elevationPrefix = elevation ? `<strong>${elevation}</strong> · ` : "";
+        setLocationText(`${elevationPrefix}${latText}, ${lonText}`);
+      } catch (error) {
+        pressureInlineEl.textContent = "—";
+        setLocationText(
+          error instanceof Error ? error.message : "Could not load pressure.",
+          true
+        );
+      }
+    }
+
+    function requestLocation(openPickerOnFail = true) {
+      if (!navigator.geolocation) {
+        setLocationText("Geolocation unavailable", true);
+        if (openPickerOnFail) openLocationDialog();
+        return;
+      }
+
+      setLocationText("Finding your location…");
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          loadLocation(position.coords.latitude, position.coords.longitude);
+        },
+        () => {
+          setLocationText("Location denied", true);
+          if (openPickerOnFail) openLocationDialog();
+        },
+        {
+          enableHighAccuracy: false,
+          timeout: 12000,
+          maximumAge: 300000,
+        }
+      );
+    }
+
+    function updateMapCoordsDisplay() {
+      mapCoordsEl.textContent = `${pickLat.toFixed(4)}°, ${pickLon.toFixed(4)}°`;
+    }
+
+    function setMapPin(lat, lon, pan = false) {
+      pickLat = lat;
+      pickLon = lon;
+      updateMapCoordsDisplay();
+
+      if (!locationMap) return;
+
+      if (locationMarker) {
+        locationMarker.setLatLng([lat, lon]);
+      } else {
+        locationMarker = L.marker([lat, lon], { draggable: true }).addTo(locationMap);
+        locationMarker.on("dragend", () => {
+          const pos = locationMarker.getLatLng();
+          setMapPin(pos.lat, pos.lng);
+        });
+      }
+
+      if (pan) locationMap.setView([lat, lon], locationMap.getZoom());
+    }
+
+    function initLocationMap() {
+      if (locationMap) return;
+
+      locationMap = L.map("location-map", {
+        zoomControl: true,
+        attributionControl: true,
+      });
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      }).addTo(locationMap);
+
+      locationMap.on("click", (event) => {
+        setMapPin(event.latlng.lat, event.latlng.lng);
+      });
+    }
+
+    function openLocationDialog() {
+      const startLat = state.lat ?? 39.8;
+      const startLon = state.lon ?? -98.5;
+      pickLat = startLat;
+      pickLon = startLon;
+      updateMapCoordsDisplay();
+      locationDialog.showModal();
+
+      requestAnimationFrame(() => {
+        initLocationMap();
+        const zoom = state.lat != null ? 8 : 4;
+        locationMap.setView([startLat, startLon], zoom);
+        setMapPin(startLat, startLon);
+        locationMap.invalidateSize();
+      });
+    }
+
+    areaSliderEl.addEventListener("input", () => {
+      state.areaSqIn = Number(areaSliderEl.value);
+      updateReadouts();
+    });
+
+    sealSliderEl.addEventListener("input", () => {
+      state.sealPct = Number(sealSliderEl.value);
+      updateReadouts();
+    });
+
+    weightSliderEl.addEventListener("input", () => {
+      state.personWeightLb = Number(weightSliderEl.value);
+      updateReadouts();
+    });
+
+    locateBtn.addEventListener("click", () => requestLocation(false));
+    chooseLocationBtn.addEventListener("click", openLocationDialog);
+    cancelLocationBtn.addEventListener("click", () => locationDialog.close());
+
+    locationForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      if (Number.isFinite(pickLat) && Number.isFinite(pickLon)) {
+        loadLocation(pickLat, pickLon);
+        locationDialog.close();
+      }
+    });
+
+    function renderPressureArrows() {
+      const arrowsEl = document.getElementById("pressure-arrows");
+      if (!arrowsEl) return;
+
+      const cx = 50;
+      const cy = 50;
+      const atmoRadius = 19.5;
+      const outerRadius = 28;
+      const arrowLength = 4.5;
+      const innerRadius = outerRadius - arrowLength;
+      const count = 16;
+      const delayClasses = ["", " delay-a", " delay-b"];
+      const parts = [];
+
+      for (let i = 0; i < count; i += 1) {
+        const angle = (i / count) * Math.PI * 2 - Math.PI / 2;
+        const cos = Math.cos(angle);
+        const sin = Math.sin(angle);
+        const x1 = cx + outerRadius * cos;
+        const y1 = cy + outerRadius * sin;
+        const x2 = cx + innerRadius * cos;
+        const y2 = cy + innerRadius * sin;
+        const tipX = cx + (atmoRadius + 1.2) * cos;
+        const tipY = cy + (atmoRadius + 1.2) * sin;
+        const wing = 1.8;
+        const px = -sin * wing;
+        const py = cos * wing;
+        const delay = delayClasses[i % delayClasses.length];
+
+        parts.push(`
+          <g class="pressure-arrow${delay}">
+            <line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" />
+            <polygon points="${tipX.toFixed(2)},${tipY.toFixed(2)} ${(x2 + px).toFixed(2)},${(y2 + py).toFixed(2)} ${(x2 - px).toFixed(2)},${(y2 - py).toFixed(2)}" />
+          </g>
+        `);
+      }
+
+      arrowsEl.innerHTML = parts.join("");
+    }
+
+    renderPressureArrows();
+    updateReadouts();
+    requestLocation(true);
+  </script>
+</body>
+</html>
