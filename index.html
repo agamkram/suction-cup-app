@@ -276,6 +276,19 @@
     .force-area-inline {
       color: var(--force);
       font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      display: inline-block;
+      vertical-align: baseline;
+    }
+
+    .force-inline {
+      min-width: 7.5ch;
+      text-align: right;
+    }
+
+    .force-area-inline {
+      min-width: 5.5ch;
+      text-align: right;
     }
 
     .result-card .cup-controls-row {
@@ -304,6 +317,14 @@
       text-align: left;
       width: 100%;
       line-height: 1.25;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .cup-control .control-value {
+      min-height: 1.25em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     input[type="range"] {
@@ -568,7 +589,7 @@
         <div class="cup-control">
           <div class="control-head">
             <span class="control-title">Vacuum percentage</span>
-            <span class="control-value" id="seal-readout">100% · Ideal suction cup</span>
+            <span class="control-value" id="seal-readout">100% · ideal cup</span>
           </div>
           <input
             type="range"
@@ -763,9 +784,9 @@
     }
 
     function sealLabel(pct) {
-      if (pct === IDEAL_SEAL_PCT) return `${pct}% · Ideal suction cup`;
-      if (pct === GOOD_SEAL_PCT) return `${pct}% · Typical suction cup`;
-      return `${pct}%`;
+      if (pct === IDEAL_SEAL_PCT) return `${pct}% · ideal cup`;
+      if (pct === GOOD_SEAL_PCT) return `${pct}% · typical cup`;
+      return `${pct}% vacuum`;
     }
 
     function updatePersonReadouts(psi) {
@@ -806,30 +827,41 @@
     }
 
     let fitFrame = 0;
+    let fitNaturalH = 0;
+    let fitNaturalW = 0;
+    let fitAvailH = 0;
+    let fitAvailW = 0;
 
-    function fitToScreen() {
+    function fitToScreen(remasure = false) {
       const app = document.getElementById("app");
       const stage = document.getElementById("fit-stage");
       if (!app || !stage) return;
 
-      app.style.transform = "translate(-50%, -50%) scale(1)";
-
-      const naturalH = app.offsetHeight;
-      const naturalW = app.offsetWidth;
-      if (!naturalH || !naturalW) return;
-
       const availH = stage.clientHeight;
       const availW = stage.clientWidth;
-      const scale = Math.min(availH / naturalH, availW / naturalW);
+      const viewportChanged = availH !== fitAvailH || availW !== fitAvailW;
 
+      if (remasure || viewportChanged || !fitNaturalH) {
+        const prevTransform = app.style.transform;
+        app.style.transform = "translate(-50%, -50%) scale(1)";
+        fitNaturalH = app.offsetHeight;
+        fitNaturalW = app.offsetWidth;
+        app.style.transform = prevTransform;
+        fitAvailH = availH;
+        fitAvailW = availW;
+      }
+
+      if (!fitNaturalH || !fitNaturalW) return;
+
+      const scale = Math.min(availH / fitNaturalH, availW / fitNaturalW);
       app.style.transform = `translate(-50%, -50%) scale(${scale})`;
       app.classList.add("is-fitted");
     }
 
-    function scheduleFitToScreen() {
+    function scheduleFitToScreen(remasure = false) {
       cancelAnimationFrame(fitFrame);
       fitFrame = requestAnimationFrame(() => {
-        requestAnimationFrame(fitToScreen);
+        requestAnimationFrame(() => fitToScreen(remasure));
       });
     }
 
@@ -881,6 +913,8 @@
           error instanceof Error ? error.message : "Could not load pressure.",
           true
         );
+      } finally {
+        scheduleFitToScreen(true);
       }
     }
 
@@ -1040,20 +1074,15 @@
     updateReadouts();
     requestLocation(true);
 
-    const appEl = document.getElementById("app");
-    if (appEl && "ResizeObserver" in window) {
-      new ResizeObserver(scheduleFitToScreen).observe(appEl);
-    }
-
-    window.addEventListener("resize", scheduleFitToScreen);
-    window.addEventListener("orientationchange", scheduleFitToScreen);
-    window.visualViewport?.addEventListener("resize", scheduleFitToScreen);
-    window.visualViewport?.addEventListener("scroll", scheduleFitToScreen);
+    window.addEventListener("resize", () => scheduleFitToScreen(true));
+    window.addEventListener("orientationchange", () => scheduleFitToScreen(true));
+    window.visualViewport?.addEventListener("resize", () => scheduleFitToScreen(true));
+    window.visualViewport?.addEventListener("scroll", () => scheduleFitToScreen(true));
 
     if (document.fonts?.ready) {
-      document.fonts.ready.then(scheduleFitToScreen);
+      document.fonts.ready.then(() => scheduleFitToScreen(true));
     } else {
-      scheduleFitToScreen();
+      scheduleFitToScreen(true);
     }
   </script>
 </body>
