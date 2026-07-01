@@ -41,14 +41,9 @@
       --card-gap: 0.35rem;
       --text-title: 1.15rem;
       --text-prose: 0.95rem;
-      --text-tip: 0.82rem;
-      --text-control-title: 0.75rem;
-      --text-control-value: 0.72rem;
+      --text-ui: 0.75rem;
       --text-stat: 0.9rem;
-      --text-stat-lg: 1rem;
       --text-label: 0.62rem;
-      --text-location: 0.72rem;
-      --text-location-elev: 0.75rem;
     }
 
     * {
@@ -115,7 +110,7 @@
     }
 
     .location-text {
-      font-size: var(--text-location);
+      font-size: var(--text-ui);
       color: var(--muted);
       max-width: 100%;
       overflow: hidden;
@@ -124,7 +119,6 @@
     }
 
     .location-text strong {
-      font-size: var(--text-location-elev);
       color: var(--accent);
       font-weight: 600;
     }
@@ -136,14 +130,14 @@
       background: transparent;
       color: var(--accent);
       font: inherit;
-      font-size: 0.68rem;
+      font-size: var(--text-ui);
       font-weight: 600;
       cursor: pointer;
       padding: 0.1rem 0.2rem;
     }
 
     .icon-btn {
-      font-size: 0.85rem;
+      font-size: var(--text-stat);
       line-height: 1;
       padding: 0.1rem 0.25rem;
     }
@@ -256,7 +250,7 @@
 
     .force-tip {
       margin-top: 0.35rem;
-      font-size: var(--text-tip);
+      font-size: var(--text-ui);
       color: var(--muted);
       line-height: 1.35;
     }
@@ -282,12 +276,12 @@
     }
 
     .control-title {
-      font-size: var(--text-control-title);
+      font-size: var(--text-ui);
       font-weight: 600;
     }
 
     .control-value {
-      font-size: var(--text-control-value);
+      font-size: var(--text-ui);
       font-weight: 600;
       color: var(--accent);
       text-align: left;
@@ -318,7 +312,7 @@
 
     .teach-copy {
       margin-top: 0.3rem;
-      font-size: 0.62rem;
+      font-size: var(--text-label);
       color: var(--muted);
       line-height: 1.35;
     }
@@ -334,17 +328,41 @@
       margin-top: 0.4rem;
     }
 
+    .weight-card .control-head {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 0.75rem;
+      align-items: start;
+    }
+
+    .weight-card-hint {
+      font-size: var(--text-ui);
+      font-weight: 400;
+      color: var(--muted);
+      line-height: 1.25;
+      min-width: 0;
+    }
+
+    .weight-card-meta {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0.08rem;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    .weight-card-meta .control-title {
+      white-space: nowrap;
+    }
+
     .air-yd-total {
       margin-bottom: var(--card-gap);
     }
 
-    .air-yd-total .air-stat-value {
-      font-size: var(--text-stat-lg);
-    }
-
     .air-breakdown {
       margin-bottom: 0.25rem;
-      font-size: var(--text-tip);
+      font-size: var(--text-ui);
       color: var(--muted);
       line-height: 1.35;
     }
@@ -393,12 +411,12 @@
     }
 
     .location-dialog h2 {
-      font-size: 1rem;
+      font-size: var(--text-stat);
       margin-bottom: 0.25rem;
     }
 
     .map-hint {
-      font-size: 0.75rem;
+      font-size: var(--text-ui);
       color: var(--muted);
       margin-bottom: 0.55rem;
     }
@@ -414,7 +432,7 @@
 
     .map-coords {
       margin-top: 0.5rem;
-      font-size: 0.78rem;
+      font-size: var(--text-ui);
       font-weight: 600;
       color: var(--accent);
       text-align: center;
@@ -430,7 +448,7 @@
     .primary-btn,
     .secondary-btn {
       font: inherit;
-      font-size: 0.8rem;
+      font-size: var(--text-ui);
       font-weight: 600;
       padding: 0.5rem 0.9rem;
       border-radius: 8px;
@@ -456,7 +474,7 @@
         --card-gap: 0.3rem;
         --text-title: 1.05rem;
         --text-prose: 0.9rem;
-        --text-tip: 0.78rem;
+        --text-ui: 0.7rem;
       }
 
       .app {
@@ -547,8 +565,11 @@
 
     <section class="card weight-card" aria-live="polite">
       <div class="control-head">
-        <span class="control-title">Your weight</span>
-        <span class="control-value" id="weight-readout">150 lbs</span>
+        <span class="weight-card-hint">Select your weight to see how many pounds of air are distributed across your body&rsquo;s surface area.</span>
+        <div class="weight-card-meta">
+          <span class="control-title">Your weight</span>
+          <span class="control-value" id="weight-readout">150 lbs</span>
+        </div>
       </div>
       <input
         type="range"
