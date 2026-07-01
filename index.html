@@ -502,7 +502,11 @@
     @media (max-width: 767px) {
       .fit-stage {
         align-items: flex-start;
-        padding-top: calc(env(safe-area-inset-top, 0px) + 0.5rem);
+        padding:
+          calc(env(safe-area-inset-top, 0px) + 0.125rem)
+          max(0.35rem, env(safe-area-inset-right))
+          calc(env(safe-area-inset-bottom, 0px) + 0.5rem)
+          max(0.35rem, env(safe-area-inset-left));
       }
 
       .app {
@@ -840,7 +844,7 @@
 
     const fit = FitToScreen.create({
       wideAppWidth: 560,
-      phoneTopBuffer: 6,
+      getTopBuffer: (layout) => (layout === "phone" ? 14 : 0),
     });
 
     function setLocationText(html, isError = false) {
