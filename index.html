@@ -77,20 +77,19 @@
       inset: 0;
       overflow: hidden;
       padding:
-        max(0.35rem, env(safe-area-inset-top))
-        max(0.5rem, env(safe-area-inset-right))
-        max(0.35rem, env(safe-area-inset-bottom))
-        max(0.5rem, env(safe-area-inset-left));
+        max(0.25rem, env(safe-area-inset-top))
+        max(0.35rem, env(safe-area-inset-right))
+        max(0.25rem, env(safe-area-inset-bottom))
+        max(0.35rem, env(safe-area-inset-left));
     }
 
     .app {
       position: absolute;
       left: 50%;
       top: 50%;
-      width: 520px;
-      max-width: calc(100vw - 1rem);
+      width: 100%;
       box-sizing: border-box;
-      padding: 0.65rem 0.75rem 0.75rem;
+      padding: 0.5rem 0.6rem 0.6rem;
       display: flex;
       flex-direction: column;
       gap: var(--app-gap);
@@ -184,13 +183,13 @@
 
     .pressure-card {
       display: grid;
-      grid-template-columns: minmax(96px, 36%) 1fr;
+      grid-template-columns: minmax(72px, 28%) 1fr;
       gap: 0.45rem;
       align-items: center;
     }
 
     .pressure-illus {
-      max-width: 96px;
+      max-width: min(28vw, 108px);
       line-height: 0;
     }
 
@@ -277,18 +276,6 @@
       color: var(--force);
       font-weight: 600;
       font-variant-numeric: tabular-nums;
-      display: inline-block;
-      vertical-align: baseline;
-    }
-
-    .force-inline {
-      min-width: 7.5ch;
-      text-align: right;
-    }
-
-    .force-area-inline {
-      min-width: 5.5ch;
-      text-align: right;
     }
 
     .result-card .cup-controls-row {
@@ -321,7 +308,6 @@
     }
 
     .cup-control .control-value {
-      min-height: 1.25em;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -512,13 +498,16 @@
     }
 
     @media (min-width: 768px) {
+      :root {
+        --app-gap: 0.6rem;
+      }
+
       .app {
-        width: 560px;
-        --app-gap: 0.65rem;
+        padding: 0.55rem 0.75rem 0.65rem;
       }
 
       .pressure-illus {
-        max-width: 108px;
+        max-width: min(22vw, 120px);
       }
     }
   </style>
@@ -589,7 +578,7 @@
         <div class="cup-control">
           <div class="control-head">
             <span class="control-title">Vacuum percentage</span>
-            <span class="control-value" id="seal-readout">100% · ideal cup</span>
+            <span class="control-value" id="seal-readout">100% · Ideal suction cup</span>
           </div>
           <input
             type="range"
@@ -784,9 +773,9 @@
     }
 
     function sealLabel(pct) {
-      if (pct === IDEAL_SEAL_PCT) return `${pct}% · ideal cup`;
-      if (pct === GOOD_SEAL_PCT) return `${pct}% · typical cup`;
-      return `${pct}% vacuum`;
+      if (pct === IDEAL_SEAL_PCT) return `${pct}% · Ideal suction cup`;
+      if (pct === GOOD_SEAL_PCT) return `${pct}% · Typical suction cup`;
+      return `${pct}%`;
     }
 
     function updatePersonReadouts(psi) {
@@ -841,6 +830,8 @@
       const availW = stage.clientWidth;
       const viewportChanged = availH !== fitAvailH || availW !== fitAvailW;
 
+      app.style.width = `${availW}px`;
+
       if (remasure || viewportChanged || !fitNaturalH) {
         const prevTransform = app.style.transform;
         app.style.transform = "translate(-50%, -50%) scale(1)";
@@ -853,7 +844,7 @@
 
       if (!fitNaturalH || !fitNaturalW) return;
 
-      const scale = Math.min(availH / fitNaturalH, availW / fitNaturalW);
+      const scale = availH / fitNaturalH;
       app.style.transform = `translate(-50%, -50%) scale(${scale})`;
       app.classList.add("is-fitted");
     }
