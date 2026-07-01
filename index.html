@@ -537,59 +537,61 @@
       }
     }
 
-    .app[data-layout="tablet"] {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.5rem;
-      padding: 0.55rem 0.7rem 0.65rem;
-      --app-gap: 0;
-      --text-title: 1.3rem;
-      --text-prose: 1rem;
-      --text-stat: 0.95rem;
-      --card-pad-y: 0.45rem;
-      --card-pad-x: 0.55rem;
-    }
+    /* iPad / tablet: viewport-driven so layout applies even if JS cache is stale */
+    @media (min-width: 768px) and (max-width: 1400px) {
+      .fit-stage > .app {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+        width: calc(100% - 2rem) !important;
+        max-width: none !important;
+        padding: 0.55rem 0.7rem 0.65rem;
+        --app-gap: 0;
+        --text-title: 1.3rem;
+        --text-prose: 1rem;
+        --text-stat: 0.95rem;
+        --card-pad-y: 0.45rem;
+        --card-pad-x: 0.55rem;
+      }
 
-    .app[data-layout="tablet"] > header {
-      grid-column: 1 / -1;
-    }
+      .fit-stage > .app > header {
+        grid-column: 1 / -1;
+      }
 
-    .app[data-layout="tablet"] > .pressure-card {
-      grid-column: 1;
-      grid-row: 2;
-    }
+      .fit-stage > .app > .pressure-card {
+        grid-column: 1;
+        grid-row: 2;
+        grid-template-columns: minmax(80px, 32%) 1fr;
+      }
 
-    .app[data-layout="tablet"] > .result-card {
-      grid-column: 2;
-      grid-row: 2;
-      align-self: start;
-    }
+      .fit-stage > .app > .result-card {
+        grid-column: 2;
+        grid-row: 2;
+        align-self: start;
+      }
 
-    .app[data-layout="tablet"] > .weight-card {
-      grid-column: 1;
-      grid-row: 3;
-    }
+      .fit-stage > .app > .weight-card {
+        grid-column: 1;
+        grid-row: 3;
+      }
 
-    .app[data-layout="tablet"] > .air-composition-card {
-      grid-column: 2;
-      grid-row: 3;
-      align-self: start;
-    }
+      .fit-stage > .app > .air-composition-card {
+        grid-column: 2;
+        grid-row: 3;
+        align-self: start;
+      }
 
-    .app[data-layout="tablet"] .force-tip {
-      display: none;
-    }
+      .fit-stage > .app .force-tip {
+        display: none;
+      }
 
-    .app[data-layout="tablet"] .location-text {
-      min-height: 1.3em;
-    }
+      .fit-stage > .app .location-text {
+        min-height: 1.3em;
+      }
 
-    .app[data-layout="tablet"] .pressure-illus {
-      max-width: 100px;
-    }
-
-    .app[data-layout="tablet"] .pressure-card {
-      grid-template-columns: minmax(80px, 32%) 1fr;
+      .fit-stage > .app .pressure-illus {
+        max-width: 100px;
+      }
     }
   </style>
 </head>
@@ -746,7 +748,7 @@
   </dialog>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="fit-to-screen.js"></script>
+  <script src="fit-to-screen.js?v=5"></script>
   <script>
     const HPA_TO_PSI = 0.0145037738;
     const IDEAL_SEAL_PCT = 100;
@@ -897,15 +899,7 @@
 
     }
 
-    function isTouchDevice() {
-      return (
-        navigator.maxTouchPoints > 1 ||
-        window.matchMedia("(pointer: coarse)").matches
-      );
-    }
-
     function isTabletViewport(availW, availH) {
-      if (!isTouchDevice()) return false;
       const shortSide = Math.min(availW, availH);
       const longSide = Math.max(availW, availH);
       return shortSide >= 744 && longSide <= 1400;
@@ -919,12 +913,17 @@
         return "wide";
       },
       getTopBuffer: (layout) => (layout === "phone" ? 14 : 0),
-      getAppLayoutWidth: (availW, layout) => {
+      getAppLayoutWidth: (availW, layout, availH) => {
         if (layout === "phone") return availW;
         if (layout === "tablet") return availW - 32;
+        if (isTabletViewport(availW, availH)) return availW - 32;
         return 560;
       },
-      getCapScaleAtOne: (layout) => layout !== "tablet",
+      getCapScaleAtOne: (layout, availW, availH) => {
+        if (layout === "tablet") return false;
+        if (availW > 767 && isTabletViewport(availW, availH)) return false;
+        return true;
+      },
     });
 
     function setLocationText(html, isError = false) {
@@ -1132,6 +1131,13 @@
 
     renderPressureArrows();
     fit.bindViewportListeners();
+
+    window.addEventListener("pageshow", (event) => {
+      if (!event.persisted) return;
+      fit.resetNaturalSize();
+      fit.scheduleFitToScreen(true);
+    });
+
     fit.bootLayout().then(() => requestLocation(true));
   </script>
 </body>
