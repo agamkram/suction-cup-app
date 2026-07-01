@@ -76,6 +76,9 @@
       position: fixed;
       inset: 0;
       overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       padding:
         max(0.25rem, env(safe-area-inset-top))
         max(0.35rem, env(safe-area-inset-right))
@@ -84,15 +87,14 @@
     }
 
     .app {
-      position: absolute;
-      left: 50%;
-      top: 50%;
+      position: relative;
+      flex-shrink: 0;
       box-sizing: border-box;
       padding: 0.5rem 0.6rem 0.6rem;
       display: flex;
       flex-direction: column;
       gap: var(--app-gap);
-      transform: translate(-50%, -50%) scale(1);
+      transform: scale(1);
       transform-origin: center center;
       will-change: transform;
     }
@@ -125,6 +127,7 @@
     }
 
     .location-text {
+      min-height: 2.6em;
       font-size: var(--text-ui);
       color: var(--muted);
       max-width: 100%;
@@ -832,6 +835,8 @@
     let fitAvailH = 0;
     let fitAvailW = 0;
     let fitLayout = "";
+    let appliedScale = 0;
+    let layoutReady = false;
 
     function isPhoneLayout(availW) {
       return availW <= PHONE_MAX_WIDTH;
@@ -857,7 +862,7 @@
 
       if (remasure || viewportChanged || layoutChanged || !fitNaturalH) {
         const prevTransform = app.style.transform;
-        app.style.transform = "translate(-50%, -50%) scale(1)";
+        app.style.transform = "scale(1)";
         fitNaturalH = app.offsetHeight;
         fitNaturalW = app.offsetWidth;
         app.style.transform = prevTransform;
@@ -874,15 +879,32 @@
         1
       );
 
-      app.style.transform = `translate(-50%, -50%) scale(${scale})`;
+      if (
+        layoutReady &&
+        app.classList.contains("is-fitted") &&
+        Math.abs(scale - appliedScale) < 0.008
+      ) {
+        return;
+      }
+
+      app.style.transform = `scale(${scale})`;
+      appliedScale = scale;
       app.classList.add("is-fitted");
+      layoutReady = true;
     }
 
     function scheduleFitToScreen(remasure = false) {
       cancelAnimationFrame(fitFrame);
-      fitFrame = requestAnimationFrame(() => {
-        requestAnimationFrame(() => fitToScreen(remasure));
-      });
+      fitFrame = requestAnimationFrame(() => fitToScreen(remasure));
+    }
+
+    async function bootLayout() {
+      if (document.fonts?.ready) {
+        try {
+          await document.fonts.ready;
+        } catch (_) {}
+      }
+      fitToScreen(true);
     }
 
     function setLocationText(html, isError = false) {
@@ -1099,11 +1121,7 @@
     window.visualViewport?.addEventListener("resize", () => scheduleFitToScreen(true));
     window.visualViewport?.addEventListener("scroll", () => scheduleFitToScreen(true));
 
-    if (document.fonts?.ready) {
-      document.fonts.ready.then(() => scheduleFitToScreen(true));
-    } else {
-      scheduleFitToScreen(true);
-    }
+    bootLayout();
   </script>
 </body>
 </html>
