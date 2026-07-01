@@ -103,6 +103,80 @@
       visibility: hidden;
     }
 
+    .fit-stage--fluid {
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      align-items: center;
+      justify-content: flex-start;
+    }
+
+    .fit-stage--fluid > .app {
+      transform: none !important;
+      width: 100% !important;
+      max-width: 36rem;
+      margin: 0 auto;
+      will-change: auto;
+    }
+
+    .fit-stage--fluid > .app[data-layout="tablet-portrait"],
+    .fit-stage--fluid > .app[data-layout="tablet-landscape"] {
+      max-width: 100%;
+      padding: 0.65rem 0.85rem 0.85rem;
+      --text-title: 1.35rem;
+      --text-prose: 1.05rem;
+      --text-stat: 1rem;
+      --card-pad-y: 0.5rem;
+      --card-pad-x: 0.6rem;
+    }
+
+    .fit-stage--fluid > .app[data-layout="tablet-portrait"] {
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+      --app-gap: 0.55rem;
+    }
+
+    .fit-stage--fluid > .app[data-layout="tablet-portrait"] .force-tip {
+      display: none;
+    }
+
+    .fit-stage--fluid > .app[data-layout="tablet-landscape"] {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.65rem;
+      --app-gap: 0;
+    }
+
+    .fit-stage--fluid > .app[data-layout="tablet-landscape"] > header {
+      grid-column: 1 / -1;
+    }
+
+    .fit-stage--fluid > .app[data-layout="tablet-landscape"] > .pressure-card {
+      grid-column: 1;
+      grid-row: 2;
+    }
+
+    .fit-stage--fluid > .app[data-layout="tablet-landscape"] > .result-card {
+      grid-column: 2;
+      grid-row: 2;
+      align-self: start;
+    }
+
+    .fit-stage--fluid > .app[data-layout="tablet-landscape"] > .weight-card {
+      grid-column: 1;
+      grid-row: 3;
+    }
+
+    .fit-stage--fluid > .app[data-layout="tablet-landscape"] > .air-composition-card {
+      grid-column: 2;
+      grid-row: 3;
+      align-self: start;
+    }
+
+    .fit-stage--fluid > .app[data-layout="tablet-landscape"] .force-tip {
+      display: none;
+    }
+
     header {
       text-align: center;
     }
@@ -537,111 +611,6 @@
       }
     }
 
-    /* iPad portrait: full-width single column, scaled to fill height */
-    @media (min-width: 744px) and (max-width: 1400px) and (orientation: portrait) {
-      .fit-stage {
-        align-items: flex-start;
-        padding:
-          calc(env(safe-area-inset-top, 0px) + 0.35rem)
-          max(0.5rem, env(safe-area-inset-right))
-          calc(env(safe-area-inset-bottom, 0px) + 0.5rem)
-          max(0.5rem, env(safe-area-inset-left));
-      }
-
-      .fit-stage > .app {
-        display: flex !important;
-        flex-direction: column !important;
-        width: calc(100% - 1.25rem) !important;
-        max-width: none !important;
-        gap: 0.38rem;
-        padding: 0.45rem 0.6rem 0.5rem;
-        transform-origin: top center;
-        --app-gap: 0.38rem;
-        --text-title: 1.28rem;
-        --text-prose: 0.98rem;
-        --text-stat: 0.92rem;
-        --card-pad-y: 0.4rem;
-        --card-pad-x: 0.5rem;
-      }
-
-      .fit-stage > .app .force-tip {
-        display: none;
-      }
-
-      .fit-stage > .app .location-text {
-        min-height: 1.2em;
-      }
-
-      .fit-stage > .app .pressure-card {
-        grid-template-columns: minmax(88px, 30%) 1fr;
-      }
-
-      .fit-stage > .app .pressure-illus {
-        max-width: 96px;
-      }
-
-      .fit-stage > .app .weight-card-hint {
-        font-size: 0.88em;
-        line-height: 1.25;
-      }
-    }
-
-    /* iPad landscape: two columns to use horizontal space */
-    @media (min-width: 744px) and (max-width: 1400px) and (orientation: landscape) {
-      .fit-stage > .app {
-        display: grid !important;
-        grid-template-columns: 1fr 1fr;
-        gap: 0.5rem;
-        width: calc(100% - 2rem) !important;
-        max-width: none !important;
-        padding: 0.55rem 0.7rem 0.65rem;
-        --app-gap: 0;
-        --text-title: 1.3rem;
-        --text-prose: 1rem;
-        --text-stat: 0.95rem;
-        --card-pad-y: 0.45rem;
-        --card-pad-x: 0.55rem;
-      }
-
-      .fit-stage > .app > header {
-        grid-column: 1 / -1;
-      }
-
-      .fit-stage > .app > .pressure-card {
-        grid-column: 1;
-        grid-row: 2;
-        grid-template-columns: minmax(80px, 32%) 1fr;
-      }
-
-      .fit-stage > .app > .result-card {
-        grid-column: 2;
-        grid-row: 2;
-        align-self: start;
-      }
-
-      .fit-stage > .app > .weight-card {
-        grid-column: 1;
-        grid-row: 3;
-      }
-
-      .fit-stage > .app > .air-composition-card {
-        grid-column: 2;
-        grid-row: 3;
-        align-self: start;
-      }
-
-      .fit-stage > .app .force-tip {
-        display: none;
-      }
-
-      .fit-stage > .app .location-text {
-        min-height: 1.3em;
-      }
-
-      .fit-stage > .app .pressure-illus {
-        max-width: 100px;
-      }
-    }
   </style>
 </head>
 <body>
@@ -797,7 +766,7 @@
   </dialog>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="fit-to-screen.js?v=6"></script>
+  <script src="fit-to-screen.js?v=7"></script>
   <script>
     const HPA_TO_PSI = 0.0145037738;
     const IDEAL_SEAL_PCT = 100;
@@ -961,29 +930,13 @@
     const fit = FitToScreen.create({
       phoneMaxWidth: 480,
       wideAppWidth: 560,
+      useScaleForLayout: (layout) => layout === "phone",
       getLayoutName: (availW, availH) => {
         if (isPhoneViewport(availW, availH)) return "phone";
         if (!isTabletViewport(availW, availH)) return "wide";
         return availW > availH ? "tablet-landscape" : "tablet-portrait";
       },
-      getTopBuffer: (layout) => {
-        if (layout === "phone") return 14;
-        if (layout === "tablet-portrait") return 4;
-        return 0;
-      },
-      getAppLayoutWidth: (availW, layout, availH) => {
-        if (layout === "phone") return availW;
-        if (layout === "tablet-portrait" || layout === "tablet-landscape") {
-          return availW - (layout === "tablet-portrait" ? 20 : 32);
-        }
-        if (isTabletViewport(availW, availH)) return availW - 20;
-        return 560;
-      },
-      getCapScaleAtOne: (layout, availW, availH) => {
-        if (layout === "tablet-portrait" || layout === "tablet-landscape") return false;
-        if (isTabletViewport(availW, availH)) return false;
-        return true;
-      },
+      getTopBuffer: (layout) => (layout === "phone" ? 14 : 0),
     });
 
     function setLocationText(html, isError = false) {

@@ -29,6 +29,7 @@
       getAppLayoutWidth,
       getCapScaleAtOne,
       getLayoutName,
+      useScaleForLayout,
       onFit = () => {},
     } = options || {};
 
@@ -94,6 +95,31 @@
       return stage.clientHeight === fitAvailH && stage.clientWidth === fitAvailW;
     }
 
+    function shouldScaleLayout(layout, availW, availH) {
+      if (typeof useScaleForLayout === "function") {
+        return useScaleForLayout(layout, availW, availH);
+      }
+      return isPhoneLayout(availW);
+    }
+
+    function applyFluidLayout(layout) {
+      stage.classList.add("fit-stage--fluid");
+      app.dataset.layout = layout;
+      app.style.width = "";
+      app.style.maxWidth = "";
+      app.style.transform = "none";
+      fitLayout = layout;
+      fitAvailH = stage.clientHeight;
+      fitAvailW = stage.clientWidth;
+      appliedScale = 1;
+      if (!app.classList.contains("is-fitted")) {
+        layoutShownAt = performance.now();
+      }
+      app.classList.add("is-fitted");
+      layoutReady = true;
+      onFit({ scale: 1, layout, availH: fitAvailH, availW: fitAvailW, fluid: true });
+    }
+
     function fitToScreen(remasure = false) {
       if (!ensureElements() || !shouldFit()) return;
 
@@ -105,6 +131,22 @@
       const layout = layoutFor(availW, availH);
       const layoutChanged = layout !== fitLayout;
 
+      if (!shouldScaleLayout(layout, availW, availH)) {
+        if (
+          layoutReady &&
+          app.classList.contains("is-fitted") &&
+          layout === fitLayout &&
+          stage.classList.contains("fit-stage--fluid") &&
+          !viewportChanged &&
+          !remasure
+        ) {
+          return;
+        }
+        applyFluidLayout(layout);
+        return;
+      }
+
+      stage.classList.remove("fit-stage--fluid");
       app.style.width = `${appLayoutWidth(availW, availH)}px`;
       app.dataset.layout = layout;
 
