@@ -113,9 +113,21 @@
     .fit-stage--fluid > .app {
       transform: none !important;
       width: 100% !important;
-      max-width: 36rem;
+      max-width: 35rem;
       margin: 0 auto;
       will-change: auto;
+    }
+
+    .fit-stage--fluid > .app[data-layout="wide"] {
+      max-width: 35rem;
+      padding: 0.5rem 0.65rem 0.65rem;
+      --app-gap: 0.5rem;
+      --text-title: 1.15rem;
+      --text-prose: 0.95rem;
+      --text-stat: 0.9rem;
+      --text-ui: 0.75rem;
+      --card-pad-y: 0.45rem;
+      --card-pad-x: 0.55rem;
     }
 
     .fit-stage--fluid > .app[data-layout="tablet-portrait"],
@@ -766,7 +778,7 @@
   </dialog>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="fit-to-screen.js?v=7"></script>
+  <script src="fit-to-screen.js?v=8"></script>
   <script>
     const HPA_TO_PSI = 0.0145037738;
     const IDEAL_SEAL_PCT = 100;
@@ -921,10 +933,22 @@
       return Math.min(availW, availH) <= 480;
     }
 
+    function isDesktopPointer() {
+      return (
+        navigator.maxTouchPoints === 0 &&
+        window.matchMedia("(hover: hover) and (pointer: fine)").matches
+      );
+    }
+
     function isTabletViewport(availW, availH) {
+      if (isDesktopPointer()) return false;
       const shortSide = Math.min(availW, availH);
       const longSide = Math.max(availW, availH);
-      return shortSide >= 744 && longSide <= 1400;
+      return (
+        shortSide >= 744 &&
+        longSide <= 1400 &&
+        (navigator.maxTouchPoints > 0 || window.matchMedia("(pointer: coarse)").matches)
+      );
     }
 
     const fit = FitToScreen.create({
