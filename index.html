@@ -687,6 +687,7 @@
   </dialog>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="fit-to-screen.js"></script>
   <script>
     const HPA_TO_PSI = 0.0145037738;
     const IDEAL_SEAL_PCT = 100;
@@ -837,165 +838,10 @@
 
     }
 
-    const PHONE_MAX_WIDTH = 767;
-    const WIDE_APP_WIDTH = 560;
-
-    let fitFrame = 0;
-    let fitNaturalH = 0;
-    let fitNaturalW = 0;
-    let fitAvailH = 0;
-    let fitAvailW = 0;
-    let fitLayout = "";
-    let appliedScale = 0;
-    let layoutReady = false;
-
-    function isPhoneLayout(availW) {
-      return availW <= PHONE_MAX_WIDTH;
-    }
-
-    function appLayoutWidth(availW) {
-      return isPhoneLayout(availW) ? availW : WIDE_APP_WIDTH;
-    }
-
-    function syncFitStageViewport() {
-      const stage = document.getElementById("fit-stage");
-      const vv = window.visualViewport;
-      if (!stage) return;
-
-      if (!vv || !isPhoneLayout(window.innerWidth)) {
-        stage.style.top = "";
-        stage.style.left = "";
-        stage.style.width = "";
-        stage.style.height = "";
-        return;
-      }
-
-      stage.style.top = `${vv.offsetTop}px`;
-      stage.style.left = `${vv.offsetLeft}px`;
-      stage.style.width = `${vv.width}px`;
-      stage.style.height = `${vv.height}px`;
-    }
-
-    function fitToScreen(remasure = false) {
-      const app = document.getElementById("app");
-      const stage = document.getElementById("fit-stage");
-      if (!app || !stage) return;
-
-      syncFitStageViewport();
-
-      const availH = stage.clientHeight;
-      const availW = stage.clientWidth;
-      const viewportChanged = availH !== fitAvailH || availW !== fitAvailW;
-      const layout = isPhoneLayout(availW) ? "phone" : "wide";
-      const layoutChanged = layout !== fitLayout;
-
-      app.style.width = `${appLayoutWidth(availW)}px`;
-      app.dataset.layout = layout;
-
-      if (remasure || viewportChanged || layoutChanged || !fitNaturalH) {
-        const alreadyFitted = app.classList.contains("is-fitted");
-        if (!alreadyFitted) {
-          app.style.transform = "scale(1)";
-        }
-        fitNaturalH = app.offsetHeight;
-        fitNaturalW = app.offsetWidth;
-        if (!alreadyFitted) {
-          app.style.transform = "";
-        }
-        fitAvailH = availH;
-        fitAvailW = availW;
-        fitLayout = layout;
-      }
-
-      if (!fitNaturalH || !fitNaturalW) return;
-
-      const topBuffer = layout === "phone" ? 6 : 0;
-      const scale = Math.min(
-        (availH - topBuffer) / fitNaturalH,
-        availW / fitNaturalW,
-        1
-      );
-
-      if (
-        layoutReady &&
-        app.classList.contains("is-fitted") &&
-        Math.abs(scale - appliedScale) < 0.008
-      ) {
-        return;
-      }
-
-      app.style.transform = `scale(${scale})`;
-      appliedScale = scale;
-      if (!app.classList.contains("is-fitted")) {
-        layoutShownAt = performance.now();
-      }
-      app.classList.add("is-fitted");
-      layoutReady = true;
-    }
-
-    function viewportSizeMatchesFit() {
-      const stage = document.getElementById("fit-stage");
-      if (!stage || !layoutReady) return false;
-      return stage.clientHeight === fitAvailH && stage.clientWidth === fitAvailW;
-    }
-
-    function scheduleFitToScreen(remasure = false) {
-      if (viewportSizeMatchesFit()) return;
-
-      cancelAnimationFrame(fitFrame);
-      fitFrame = requestAnimationFrame(() => fitToScreen(remasure));
-    }
-
-    function settleViewport() {
-      const stage = document.getElementById("fit-stage");
-      if (!stage) return Promise.resolve();
-
-      const maxMs = 600;
-      const needStableFrames = 4;
-      let stable = 0;
-      let lastW = -1;
-      let lastH = -1;
-      const start = performance.now();
-
-      return new Promise((resolve) => {
-        function tick() {
-          syncFitStageViewport();
-          const w = stage.clientWidth;
-          const h = stage.clientHeight;
-
-          if (w > 0 && h > 0 && w === lastW && h === lastH) {
-            stable += 1;
-            if (stable >= needStableFrames) {
-              resolve();
-              return;
-            }
-          } else {
-            stable = 0;
-            lastW = w;
-            lastH = h;
-          }
-
-          if (performance.now() - start >= maxMs) {
-            resolve();
-            return;
-          }
-
-          requestAnimationFrame(tick);
-        }
-
-        requestAnimationFrame(tick);
-      });
-    }
-
-    async function bootLayout() {
-      if (document.fonts?.ready) {
-        try {
-          await document.fonts.ready;
-        } catch (_) {}
-      }
-      await settleViewport();
-      fitToScreen(true);
-    }
+    const fit = FitToScreen.create({
+      wideAppWidth: 560,
+      phoneTopBuffer: 6,
+    });
 
     function setLocationText(html, isError = false) {
       locationTextEl.innerHTML = html;
@@ -1201,20 +1047,8 @@
     }
 
     renderPressureArrows();
-
-    let layoutShownAt = 0;
-
-    function onViewportResize() {
-      if (!layoutReady) return;
-      if (performance.now() - layoutShownAt < 350) return;
-      scheduleFitToScreen(true);
-    }
-
-    window.addEventListener("resize", onViewportResize);
-    window.addEventListener("orientationchange", () => scheduleFitToScreen(true));
-    window.visualViewport?.addEventListener("resize", onViewportResize);
-
-    bootLayout().then(() => requestLocation(true));
+    fit.bindViewportListeners();
+    fit.bootLayout().then(() => requestLocation(true));
   </script>
 </body>
 </html>
