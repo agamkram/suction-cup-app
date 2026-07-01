@@ -260,11 +260,12 @@
       scheduleFitToScreen(true);
     }
 
-    function bindViewportListeners() {
+    function bindViewportListeners(options = {}) {
       if (listenersBound) return;
       listenersBound = true;
+      const bindOrientation = options.bindOrientation !== false;
       root.addEventListener("resize", onViewportResize);
-      root.addEventListener("orientationchange", onOrientationChange);
+      if (bindOrientation) root.addEventListener("orientationchange", onOrientationChange);
       root.visualViewport?.addEventListener("resize", onViewportResize);
     }
 

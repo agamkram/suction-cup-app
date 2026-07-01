@@ -262,13 +262,6 @@
       padding: var(--card-pad-y) var(--card-pad-x);
     }
 
-    .panel-label {
-      font-size: var(--text-label);
-      font-weight: 600;
-      color: var(--muted);
-      margin-bottom: 0.2rem;
-    }
-
     .pressure-card {
       display: grid;
       grid-template-columns: minmax(72px, 28%) 1fr;
@@ -426,13 +419,6 @@
 
     .cup-control {
       min-width: 0;
-    }
-
-    .teach-copy {
-      margin-top: 0.3rem;
-      font-size: var(--text-label);
-      color: var(--muted);
-      line-height: 1.35;
     }
 
     .air-row,
@@ -1167,7 +1153,7 @@
     }
 
     renderPressureArrows();
-    fit.bindViewportListeners();
+    fit.bindViewportListeners({ bindOrientation: false });
 
     window.addEventListener("pageshow", (event) => {
       if (!event.persisted) return;
