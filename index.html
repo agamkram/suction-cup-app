@@ -499,6 +499,17 @@
       color: var(--text);
     }
 
+    @media (max-width: 767px) {
+      .fit-stage {
+        align-items: flex-start;
+        padding-top: calc(env(safe-area-inset-top, 0px) + 0.5rem);
+      }
+
+      .app {
+        transform-origin: top center;
+      }
+    }
+
     @media (min-width: 768px) {
       .fit-stage {
         padding:
@@ -873,8 +884,9 @@
 
       if (!fitNaturalH || !fitNaturalW) return;
 
+      const topBuffer = layout === "phone" ? 6 : 0;
       const scale = Math.min(
-        availH / fitNaturalH,
+        (availH - topBuffer) / fitNaturalH,
         availW / fitNaturalW,
         1
       );
