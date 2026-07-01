@@ -537,18 +537,59 @@
       }
     }
 
-    @media (min-width: 768px) and (max-width: 1024px) {
-      .app {
-        padding: 0.75rem 0.85rem 0.85rem;
-        --app-gap: 0.75rem;
-        --text-title: 1.35rem;
-        --text-prose: 1.05rem;
-        --text-stat: 1rem;
-      }
+    .app[data-layout="tablet"] {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+      padding: 0.55rem 0.7rem 0.65rem;
+      --app-gap: 0;
+      --text-title: 1.3rem;
+      --text-prose: 1rem;
+      --text-stat: 0.95rem;
+      --card-pad-y: 0.45rem;
+      --card-pad-x: 0.55rem;
+    }
 
-      .pressure-illus {
-        max-width: 128px;
-      }
+    .app[data-layout="tablet"] > header {
+      grid-column: 1 / -1;
+    }
+
+    .app[data-layout="tablet"] > .pressure-card {
+      grid-column: 1;
+      grid-row: 2;
+    }
+
+    .app[data-layout="tablet"] > .result-card {
+      grid-column: 2;
+      grid-row: 2;
+      align-self: start;
+    }
+
+    .app[data-layout="tablet"] > .weight-card {
+      grid-column: 1;
+      grid-row: 3;
+    }
+
+    .app[data-layout="tablet"] > .air-composition-card {
+      grid-column: 2;
+      grid-row: 3;
+      align-self: start;
+    }
+
+    .app[data-layout="tablet"] .force-tip {
+      display: none;
+    }
+
+    .app[data-layout="tablet"] .location-text {
+      min-height: 1.3em;
+    }
+
+    .app[data-layout="tablet"] .pressure-illus {
+      max-width: 100px;
+    }
+
+    .app[data-layout="tablet"] .pressure-card {
+      grid-template-columns: minmax(80px, 32%) 1fr;
     }
   </style>
 </head>
@@ -662,7 +703,7 @@
       </div>
     </section>
 
-    <section class="card" aria-live="polite">
+    <section class="card air-composition-card" aria-live="polite">
       <div class="air-stat air-yd-total">
         <div class="air-stat-label">Weight of air per cubic yard</div>
         <div class="air-stat-value" id="air-yd">—</div>
@@ -856,23 +897,34 @@
 
     }
 
+    function isTouchDevice() {
+      return (
+        navigator.maxTouchPoints > 1 ||
+        window.matchMedia("(pointer: coarse)").matches
+      );
+    }
+
     function isTabletViewport(availW, availH) {
+      if (!isTouchDevice()) return false;
       const shortSide = Math.min(availW, availH);
-      return shortSide > 767 && shortSide <= 1024;
+      const longSide = Math.max(availW, availH);
+      return shortSide >= 744 && longSide <= 1400;
     }
 
     const fit = FitToScreen.create({
       wideAppWidth: 560,
+      getLayoutName: (availW, availH) => {
+        if (availW <= 767) return "phone";
+        if (isTabletViewport(availW, availH)) return "tablet";
+        return "wide";
+      },
       getTopBuffer: (layout) => (layout === "phone" ? 14 : 0),
-      getAppLayoutWidth: (availW, layout, availH) => {
+      getAppLayoutWidth: (availW, layout) => {
         if (layout === "phone") return availW;
-        if (isTabletViewport(availW, availH)) return Math.min(availW - 48, 720);
+        if (layout === "tablet") return availW - 32;
         return 560;
       },
-      getCapScaleAtOne: (layout, availW, availH) => {
-        if (layout === "phone") return true;
-        return !isTabletViewport(availW, availH);
-      },
+      getCapScaleAtOne: (layout) => layout !== "tablet",
     });
 
     function setLocationText(html, isError = false) {

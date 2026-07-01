@@ -28,6 +28,7 @@
       getTopBuffer,
       getAppLayoutWidth,
       getCapScaleAtOne,
+      getLayoutName,
       onFit = () => {},
     } = options || {};
 
@@ -57,12 +58,13 @@
       return availW <= phoneMaxWidth;
     }
 
-    function layoutFor(availW) {
+    function layoutFor(availW, availH) {
+      if (getLayoutName) return getLayoutName(availW, availH);
       return isPhoneLayout(availW) ? "phone" : "wide";
     }
 
     function appLayoutWidth(availW, availH) {
-      const layout = layoutFor(availW);
+      const layout = layoutFor(availW, availH);
       if (getAppLayoutWidth) {
         const custom = getAppLayoutWidth(availW, layout, availH);
         if (custom != null) return custom;
@@ -100,7 +102,7 @@
       const availH = stage.clientHeight;
       const availW = stage.clientWidth;
       const viewportChanged = availH !== fitAvailH || availW !== fitAvailW;
-      const layout = layoutFor(availW);
+      const layout = layoutFor(availW, availH);
       const layoutChanged = layout !== fitLayout;
 
       app.style.width = `${appLayoutWidth(availW, availH)}px`;
