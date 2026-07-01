@@ -38,14 +38,15 @@
       --air: #4ade80;
       --border: rgba(255, 255, 255, 0.08);
       --arrow: rgba(61, 156, 245, 0.7);
-      --card-pad-y: clamp(0.42rem, 1.4dvh, 0.8rem);
-      --card-pad-x: clamp(0.55rem, 1.6dvh, 0.85rem);
-      --card-gap: clamp(0.28rem, 0.9dvh, 0.55rem);
-      --text-title: clamp(1.05rem, 2.6dvh, 1.45rem);
-      --text-prose: clamp(0.88rem, 2.1dvh, 1.08rem);
-      --text-ui: clamp(0.68rem, 1.7dvh, 0.88rem);
-      --text-stat: clamp(0.82rem, 2dvh, 1.05rem);
-      --text-label: clamp(0.56rem, 1.45dvh, 0.72rem);
+      --card-pad-y: 0.5rem;
+      --card-pad-x: 0.65rem;
+      --card-gap: 0.35rem;
+      --text-title: 1.15rem;
+      --text-prose: 0.95rem;
+      --text-ui: 0.75rem;
+      --text-stat: 0.9rem;
+      --text-label: 0.62rem;
+      --app-gap: clamp(0.45rem, 1.5vmin, 0.7rem);
     }
 
     * {
@@ -55,10 +56,7 @@
     }
 
     html {
-      height: 100%;
-      max-height: 100dvh;
-      min-height: 100lvh;
-      overflow: hidden;
+      min-height: 100%;
       background: var(--bg);
       -webkit-text-size-adjust: 100%;
       text-size-adjust: 100%;
@@ -69,52 +67,27 @@
       font-family: "DM Sans", system-ui, sans-serif;
       background: var(--bg);
       color: var(--text);
-      height: 100dvh;
-      max-height: 100dvh;
-      overflow: hidden;
-      display: flex;
-      justify-content: center;
-      align-items: stretch;
+      min-height: 100dvh;
     }
 
     .app {
       width: min(100%, 520px);
-      height: 100dvh;
-      max-height: 100dvh;
-      min-height: 0;
+      margin: 0 auto;
+      min-height: 100dvh;
       box-sizing: border-box;
       padding:
-        max(0.45rem, env(safe-area-inset-top))
+        max(0.65rem, env(safe-area-inset-top))
         max(0.75rem, env(safe-area-inset-right))
-        max(0.45rem, env(safe-area-inset-bottom))
+        max(1rem, env(safe-area-inset-bottom))
         max(0.75rem, env(safe-area-inset-left));
-      display: grid;
-      grid-template-rows: auto minmax(0, 0.95fr) minmax(0, 1.2fr) minmax(0, 1.05fr) minmax(0, 1.35fr);
-      gap: clamp(0.32rem, 1.1dvh, 0.72rem);
-      overflow: hidden;
-      container-type: size;
-    }
-
-    @media (pointer: fine) {
-      body,
-      .app {
-        height: 100svh;
-        max-height: 100svh;
-      }
-
-      .app {
-        gap: clamp(0.28rem, 1svh, 0.55rem);
-      }
-    }
-
-    .app > * {
-      min-height: 0;
-      width: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: safe center;
+      gap: var(--app-gap);
     }
 
     header {
       text-align: center;
-      flex-shrink: 0;
     }
 
     .intro {
@@ -183,11 +156,6 @@
       border: 1px solid var(--border);
       border-radius: 12px;
       padding: var(--card-pad-y) var(--card-pad-x);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      min-height: 0;
-      overflow: hidden;
     }
 
     .panel-label {
@@ -199,14 +167,13 @@
 
     .pressure-card {
       display: grid;
-      grid-template-columns: minmax(84px, 34%) 1fr;
-      gap: clamp(0.35rem, 1.2cqh, 0.65rem);
+      grid-template-columns: minmax(96px, 36%) 1fr;
+      gap: 0.45rem;
       align-items: center;
     }
 
     .pressure-illus {
-      max-width: min(100%, clamp(88px, 15cqh, 136px));
-      justify-self: center;
+      max-width: 96px;
       line-height: 0;
     }
 
@@ -282,14 +249,10 @@
     }
 
     .force-tip {
-      margin-top: clamp(0.2rem, 0.7cqh, 0.4rem);
+      margin-top: 0.35rem;
       font-size: var(--text-ui);
       color: var(--muted);
       line-height: 1.35;
-    }
-
-    .force-tip + .force-tip {
-      margin-top: clamp(0.12rem, 0.45cqh, 0.28rem);
     }
 
     .force-inline,
@@ -299,8 +262,8 @@
     }
 
     .result-card .cup-controls-row {
-      margin-top: auto;
-      padding-top: clamp(0.35rem, 1.1cqh, 0.65rem);
+      margin-top: 0.55rem;
+      padding-top: 0.55rem;
       border-top: 1px solid var(--border);
     }
 
@@ -330,14 +293,12 @@
       width: 100%;
       accent-color: var(--accent);
       cursor: pointer;
-      height: clamp(1.15rem, 2.6cqh, 1.75rem);
-      min-height: 44px;
+      height: 1.25rem;
     }
 
-    @media (pointer: fine) {
+    @media (pointer: coarse) {
       input[type="range"] {
-        min-height: 28px;
-        height: clamp(1rem, 2.2cqh, 1.4rem);
+        min-height: 44px;
       }
     }
 
@@ -370,8 +331,7 @@
     }
 
     .person-results {
-      margin-top: auto;
-      padding-top: clamp(0.25rem, 0.9cqh, 0.5rem);
+      margin-top: 0.4rem;
     }
 
     .weight-card .control-head {
@@ -402,17 +362,12 @@
       white-space: nowrap;
     }
 
-    .app > section.card:last-of-type {
-      justify-content: space-evenly;
-      gap: clamp(0.18rem, 0.75cqh, 0.42rem);
-    }
-
     .air-yd-total {
-      margin-bottom: 0;
+      margin-bottom: var(--card-gap);
     }
 
     .air-breakdown {
-      margin-bottom: 0;
+      margin-bottom: 0.25rem;
       font-size: var(--text-ui);
       color: var(--muted);
       line-height: 1.35;
@@ -422,12 +377,9 @@
       background: var(--surface-2);
       border: 1px solid var(--border);
       border-radius: 10px;
-      padding: clamp(0.32rem, 1.1cqh, 0.55rem) clamp(0.4rem, 1.2cqh, 0.6rem);
+      padding: 0.4rem 0.5rem;
       text-align: center;
       min-width: 0;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
     }
 
     .air-stat-label {
@@ -439,11 +391,10 @@
 
     .air-stat-value {
       margin-top: 0.08rem;
-      font-size: clamp(var(--text-stat), 2.4cqh, 1.15rem);
+      font-size: var(--text-stat);
       font-weight: 700;
       color: var(--air);
       letter-spacing: -0.03em;
-      line-height: 1.15;
     }
 
     .location-text.error {
@@ -525,142 +476,11 @@
     @media (min-width: 768px) {
       .app {
         width: min(100%, 560px);
-        gap: clamp(0.42rem, 1.35dvh, 0.9rem);
-        padding-top: max(0.65rem, env(safe-area-inset-top));
-        padding-bottom: max(0.65rem, env(safe-area-inset-bottom));
+        --app-gap: clamp(0.55rem, 1.8vmin, 0.85rem);
       }
 
       .pressure-illus {
-        max-width: min(100%, clamp(104px, 17cqh, 152px));
-      }
-    }
-
-    @media (min-width: 1024px) and (pointer: fine) {
-      .app {
-        width: min(100%, 520px);
-        gap: clamp(0.3rem, 0.9svh, 0.55rem);
-        padding-top: max(0.4rem, env(safe-area-inset-top));
-        padding-bottom: max(0.4rem, env(safe-area-inset-bottom));
-      }
-
-      :root {
-        --card-pad-y: clamp(0.34rem, 1svh, 0.52rem);
-        --card-pad-x: clamp(0.5rem, 1.2svh, 0.65rem);
-        --card-gap: clamp(0.22rem, 0.65svh, 0.36rem);
-        --text-title: clamp(0.98rem, 2.2svh, 1.2rem);
-        --text-prose: clamp(0.82rem, 1.85svh, 0.95rem);
-        --text-ui: clamp(0.64rem, 1.5svh, 0.76rem);
-        --text-stat: clamp(0.76rem, 1.75svh, 0.9rem);
-        --text-label: clamp(0.52rem, 1.25svh, 0.64rem);
-      }
-
-      .pressure-illus {
-        max-width: min(100%, clamp(72px, 12cqh, 96px));
-      }
-
-      .force-tip {
-        display: none;
-      }
-
-      .location-row {
-        margin-top: 0.2rem;
-      }
-
-      .result-card .cup-controls-row {
-        padding-top: clamp(0.28rem, 0.8cqh, 0.45rem);
-      }
-
-      .person-results {
-        padding-top: clamp(0.2rem, 0.65cqh, 0.35rem);
-      }
-
-      .air-stat {
-        padding: clamp(0.26rem, 0.85cqh, 0.4rem) clamp(0.34rem, 0.95cqh, 0.48rem);
-      }
-
-      .air-stat-value {
-        font-size: clamp(var(--text-stat), 2cqh, 0.95rem);
-      }
-    }
-
-    @media (pointer: fine) and (max-height: 820px) {
-      :root {
-        --card-pad-y: 0.32rem;
-        --card-pad-x: 0.48rem;
-        --card-gap: 0.2rem;
-        --text-title: 0.95rem;
-        --text-prose: 0.8rem;
-        --text-ui: 0.62rem;
-        --text-stat: 0.74rem;
-        --text-label: 0.5rem;
-      }
-
-      .app {
-        gap: 0.22rem;
-        grid-template-rows: auto minmax(0, 0.85fr) minmax(0, 1.1fr) minmax(0, 0.95fr) minmax(0, 1.2fr);
-      }
-
-      .pressure-illus {
-        max-width: min(100%, 68px);
-      }
-
-      .weight-card-hint {
-        line-height: 1.15;
-      }
-    }
-
-    @media (orientation: landscape) and (max-height: 520px) {
-      :root {
-        --card-pad-y: 0.34rem;
-        --card-pad-x: 0.5rem;
-        --card-gap: 0.22rem;
-        --text-title: 0.98rem;
-        --text-prose: 0.82rem;
-        --text-ui: 0.64rem;
-        --text-stat: 0.76rem;
-        --text-label: 0.54rem;
-      }
-
-      .app {
-        gap: 0.24rem;
-        grid-template-rows: auto minmax(0, 0.95fr) minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 0.9fr);
-      }
-
-      .location-row {
-        margin-top: 0.15rem;
-      }
-
-      .force-tip {
-        display: none;
-      }
-
-      .pressure-illus {
-        max-width: min(100%, 76px);
-      }
-
-      input[type="range"] {
-        min-height: 36px;
-        height: 1.1rem;
-      }
-    }
-
-    @media (max-height: 680px) {
-      :root {
-        --card-pad-y: 0.38rem;
-        --card-pad-x: 0.52rem;
-        --card-gap: 0.26rem;
-        --text-title: 1rem;
-        --text-prose: 0.86rem;
-        --text-ui: 0.66rem;
-        --text-stat: 0.8rem;
-      }
-
-      .app {
-        gap: var(--card-gap);
-      }
-
-      .force-tip + .force-tip {
-        display: none;
+        max-width: 108px;
       }
     }
   </style>
