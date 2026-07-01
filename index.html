@@ -87,7 +87,6 @@
       position: absolute;
       left: 50%;
       top: 50%;
-      width: 100%;
       box-sizing: border-box;
       padding: 0.5rem 0.6rem 0.6rem;
       display: flex;
@@ -498,16 +497,25 @@
     }
 
     @media (min-width: 768px) {
-      :root {
-        --app-gap: 0.6rem;
+      .fit-stage {
+        padding:
+          max(0.35rem, env(safe-area-inset-top))
+          max(0.5rem, env(safe-area-inset-right))
+          max(0.35rem, env(safe-area-inset-bottom))
+          max(0.5rem, env(safe-area-inset-left));
       }
 
       .app {
-        padding: 0.55rem 0.75rem 0.65rem;
+        padding: 0.65rem 0.75rem 0.75rem;
+        --app-gap: 0.65rem;
+      }
+
+      .pressure-card {
+        grid-template-columns: minmax(96px, 36%) 1fr;
       }
 
       .pressure-illus {
-        max-width: min(22vw, 120px);
+        max-width: 108px;
       }
     }
   </style>
@@ -815,11 +823,23 @@
 
     }
 
+    const PHONE_MAX_WIDTH = 767;
+    const WIDE_APP_WIDTH = 560;
+
     let fitFrame = 0;
     let fitNaturalH = 0;
     let fitNaturalW = 0;
     let fitAvailH = 0;
     let fitAvailW = 0;
+    let fitLayout = "";
+
+    function isPhoneLayout(availW) {
+      return availW <= PHONE_MAX_WIDTH;
+    }
+
+    function appLayoutWidth(availW) {
+      return isPhoneLayout(availW) ? availW : WIDE_APP_WIDTH;
+    }
 
     function fitToScreen(remasure = false) {
       const app = document.getElementById("app");
@@ -829,10 +849,13 @@
       const availH = stage.clientHeight;
       const availW = stage.clientWidth;
       const viewportChanged = availH !== fitAvailH || availW !== fitAvailW;
+      const layout = isPhoneLayout(availW) ? "phone" : "wide";
+      const layoutChanged = layout !== fitLayout;
 
-      app.style.width = `${availW}px`;
+      app.style.width = `${appLayoutWidth(availW)}px`;
+      app.dataset.layout = layout;
 
-      if (remasure || viewportChanged || !fitNaturalH) {
+      if (remasure || viewportChanged || layoutChanged || !fitNaturalH) {
         const prevTransform = app.style.transform;
         app.style.transform = "translate(-50%, -50%) scale(1)";
         fitNaturalH = app.offsetHeight;
@@ -840,11 +863,15 @@
         app.style.transform = prevTransform;
         fitAvailH = availH;
         fitAvailW = availW;
+        fitLayout = layout;
       }
 
       if (!fitNaturalH || !fitNaturalW) return;
 
-      const scale = availH / fitNaturalH;
+      const scale = layout === "phone"
+        ? availH / fitNaturalH
+        : Math.min(availH / fitNaturalH, availW / fitNaturalW);
+
       app.style.transform = `translate(-50%, -50%) scale(${scale})`;
       app.classList.add("is-fitted");
     }
