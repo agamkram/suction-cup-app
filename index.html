@@ -857,10 +857,31 @@
       return isPhoneLayout(availW) ? availW : WIDE_APP_WIDTH;
     }
 
+    function syncFitStageViewport() {
+      const stage = document.getElementById("fit-stage");
+      const vv = window.visualViewport;
+      if (!stage) return;
+
+      if (!vv || !isPhoneLayout(window.innerWidth)) {
+        stage.style.top = "";
+        stage.style.left = "";
+        stage.style.width = "";
+        stage.style.height = "";
+        return;
+      }
+
+      stage.style.top = `${vv.offsetTop}px`;
+      stage.style.left = `${vv.offsetLeft}px`;
+      stage.style.width = `${vv.width}px`;
+      stage.style.height = `${vv.height}px`;
+    }
+
     function fitToScreen(remasure = false) {
       const app = document.getElementById("app");
       const stage = document.getElementById("fit-stage");
       if (!app || !stage) return;
+
+      syncFitStageViewport();
 
       const availH = stage.clientHeight;
       const availW = stage.clientWidth;
@@ -872,11 +893,15 @@
       app.dataset.layout = layout;
 
       if (remasure || viewportChanged || layoutChanged || !fitNaturalH) {
-        const prevTransform = app.style.transform;
-        app.style.transform = "scale(1)";
+        const alreadyFitted = app.classList.contains("is-fitted");
+        if (!alreadyFitted) {
+          app.style.transform = "scale(1)";
+        }
         fitNaturalH = app.offsetHeight;
         fitNaturalW = app.offsetWidth;
-        app.style.transform = prevTransform;
+        if (!alreadyFitted) {
+          app.style.transform = "";
+        }
         fitAvailH = availH;
         fitAvailW = availW;
         fitLayout = layout;
@@ -901,13 +926,65 @@
 
       app.style.transform = `scale(${scale})`;
       appliedScale = scale;
+      if (!app.classList.contains("is-fitted")) {
+        layoutShownAt = performance.now();
+      }
       app.classList.add("is-fitted");
       layoutReady = true;
     }
 
+    function viewportSizeMatchesFit() {
+      const stage = document.getElementById("fit-stage");
+      if (!stage || !layoutReady) return false;
+      return stage.clientHeight === fitAvailH && stage.clientWidth === fitAvailW;
+    }
+
     function scheduleFitToScreen(remasure = false) {
+      if (viewportSizeMatchesFit()) return;
+
       cancelAnimationFrame(fitFrame);
       fitFrame = requestAnimationFrame(() => fitToScreen(remasure));
+    }
+
+    function settleViewport() {
+      const stage = document.getElementById("fit-stage");
+      if (!stage) return Promise.resolve();
+
+      const maxMs = 600;
+      const needStableFrames = 4;
+      let stable = 0;
+      let lastW = -1;
+      let lastH = -1;
+      const start = performance.now();
+
+      return new Promise((resolve) => {
+        function tick() {
+          syncFitStageViewport();
+          const w = stage.clientWidth;
+          const h = stage.clientHeight;
+
+          if (w > 0 && h > 0 && w === lastW && h === lastH) {
+            stable += 1;
+            if (stable >= needStableFrames) {
+              resolve();
+              return;
+            }
+          } else {
+            stable = 0;
+            lastW = w;
+            lastH = h;
+          }
+
+          if (performance.now() - start >= maxMs) {
+            resolve();
+            return;
+          }
+
+          requestAnimationFrame(tick);
+        }
+
+        requestAnimationFrame(tick);
+      });
     }
 
     async function bootLayout() {
@@ -916,6 +993,7 @@
           await document.fonts.ready;
         } catch (_) {}
       }
+      await settleViewport();
       fitToScreen(true);
     }
 
@@ -967,8 +1045,6 @@
           error instanceof Error ? error.message : "Could not load pressure.",
           true
         );
-      } finally {
-        scheduleFitToScreen(true);
       }
     }
 
@@ -1125,15 +1201,20 @@
     }
 
     renderPressureArrows();
-    updateReadouts();
-    requestLocation(true);
 
-    window.addEventListener("resize", () => scheduleFitToScreen(true));
+    let layoutShownAt = 0;
+
+    function onViewportResize() {
+      if (!layoutReady) return;
+      if (performance.now() - layoutShownAt < 350) return;
+      scheduleFitToScreen(true);
+    }
+
+    window.addEventListener("resize", onViewportResize);
     window.addEventListener("orientationchange", () => scheduleFitToScreen(true));
-    window.visualViewport?.addEventListener("resize", () => scheduleFitToScreen(true));
-    window.visualViewport?.addEventListener("scroll", () => scheduleFitToScreen(true));
+    window.visualViewport?.addEventListener("resize", onViewportResize);
 
-    bootLayout();
+    bootLayout().then(() => requestLocation(true));
   </script>
 </body>
 </html>
