@@ -26,6 +26,8 @@
       capScaleAtOne = true,
       shouldFit = () => true,
       getTopBuffer,
+      getAppLayoutWidth,
+      getCapScaleAtOne,
       onFit = () => {},
     } = options || {};
 
@@ -55,7 +57,16 @@
       return availW <= phoneMaxWidth;
     }
 
-    function appLayoutWidth(availW) {
+    function layoutFor(availW) {
+      return isPhoneLayout(availW) ? "phone" : "wide";
+    }
+
+    function appLayoutWidth(availW, availH) {
+      const layout = layoutFor(availW);
+      if (getAppLayoutWidth) {
+        const custom = getAppLayoutWidth(availW, layout, availH);
+        if (custom != null) return custom;
+      }
       return isPhoneLayout(availW) ? availW : wideAppWidth;
     }
 
@@ -89,10 +100,10 @@
       const availH = stage.clientHeight;
       const availW = stage.clientWidth;
       const viewportChanged = availH !== fitAvailH || availW !== fitAvailW;
-      const layout = isPhoneLayout(availW) ? "phone" : "wide";
+      const layout = layoutFor(availW);
       const layoutChanged = layout !== fitLayout;
 
-      app.style.width = `${appLayoutWidth(availW)}px`;
+      app.style.width = `${appLayoutWidth(availW, availH)}px`;
       app.dataset.layout = layout;
 
       if (remasure || viewportChanged || layoutChanged || !fitNaturalH) {
@@ -113,7 +124,10 @@
         (availH - buffer) / fitNaturalH,
         availW / fitNaturalW
       );
-      if (capScaleAtOne) scale = Math.min(scale, 1);
+      const capAtOne = getCapScaleAtOne
+        ? getCapScaleAtOne(layout, availW, availH)
+        : capScaleAtOne;
+      if (capAtOne) scale = Math.min(scale, 1);
 
       if (
         layoutReady &&
