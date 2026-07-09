@@ -595,7 +595,7 @@
         padding:
           calc(env(safe-area-inset-top, 0px) + 0.125rem)
           max(0.35rem, env(safe-area-inset-right))
-          calc(env(safe-area-inset-bottom, 0px) + 0.5rem)
+          calc(env(safe-area-inset-bottom, 0px) + 0.2rem)
           max(0.35rem, env(safe-area-inset-left));
       }
 
@@ -911,7 +911,10 @@
 
       updatePersonReadouts(psi);
 
-      if (pressureHpa == null) return;
+      if (pressureHpa == null) {
+        refitAfterContentChange();
+        return;
+      }
 
       const force = pullForceLbs(psi, areaSqIn, sealPct);
       const lbPerYd = airDensityLbPerCuFt(pressureHpa, tempC ?? 15) * CU_FT_PER_CU_YD;
@@ -931,6 +934,9 @@
         airGasEls[id].textContent = formatGasMass(mass);
       });
 
+      // Yellow values wrap taller than the "—" placeholders; remeasure so scale
+      // still fits the full stack after pressure loads.
+      refitAfterContentChange();
     }
 
     function isPhoneViewport(availW, availH) {
@@ -964,8 +970,14 @@
         if (!isTabletViewport(availW, availH)) return "wide";
         return availW > availH ? "tablet-landscape" : "tablet-portrait";
       },
-      getTopBuffer: (layout) => (layout === "phone" ? 14 : 0),
+      // Keep phone buffer tiny so fit uses nearly the full stage (was 14px dead space).
+      getTopBuffer: (layout) => (layout === "phone" ? 2 : 0),
     });
+
+    function refitAfterContentChange() {
+      fit.resetNaturalSize();
+      fit.scheduleFitToScreen(true);
+    }
 
     function setLocationText(html, isError = false) {
       locationTextEl.innerHTML = html;
@@ -1009,12 +1021,14 @@
         const elevation = formatElevation(state.elevationM);
         const elevationPrefix = elevation ? `<strong>${elevation}</strong> · ` : "";
         setLocationText(`${elevationPrefix}${latText}, ${lonText}`);
+        refitAfterContentChange();
       } catch (error) {
         pressureInlineEl.textContent = "—";
         setLocationText(
           error instanceof Error ? error.message : "Could not load pressure.",
           true
         );
+        refitAfterContentChange();
       }
     }
 
