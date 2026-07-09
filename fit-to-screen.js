@@ -120,19 +120,6 @@
       onFit({ scale: 1, layout, availH: fitAvailH, availW: fitAvailW, fluid: true });
     }
 
-    function stageContentBox() {
-      const rect = stage.getBoundingClientRect();
-      const cs = root.getComputedStyle(stage);
-      const pt = parseFloat(cs.paddingTop) || 0;
-      const pb = parseFloat(cs.paddingBottom) || 0;
-      const pl = parseFloat(cs.paddingLeft) || 0;
-      const pr = parseFloat(cs.paddingRight) || 0;
-      return {
-        width: Math.max(0, rect.width - pl - pr),
-        height: Math.max(0, rect.height - pt - pb),
-      };
-    }
-
     function measureNaturalSize() {
       // Layout size ignores CSS transform, so no scale(1) flash needed.
       fitNaturalH = app.offsetHeight;
@@ -179,44 +166,29 @@
       if (!fitNaturalH || !fitNaturalW) return;
 
       const buffer = topBufferFor(layout);
-      const box = stageContentBox();
-      // Prefer the real content box (after padding) over clientHeight alone.
-      const heightRoom = Math.max(1, Math.min(availH, box.height) - buffer);
-      const widthRoom = Math.max(1, Math.min(availW, box.width));
-      let scale = Math.min(heightRoom / fitNaturalH, widthRoom / fitNaturalW);
+      // Height-first: fill the stage vertically. Only yield to width when it
+      // would overflow by more than 2px (avoids tiny width errors leaving a
+      // large empty bottom strip).
+      const heightRoom = Math.max(1, availH - buffer);
+      const widthRoom = Math.max(1, availW);
       const capAtOne = getCapScaleAtOne
         ? getCapScaleAtOne(layout, availW, availH)
         : capScaleAtOne;
+      let scale = heightRoom / fitNaturalH;
       if (capAtOne) scale = Math.min(scale, 1);
+      if (fitNaturalW * scale > widthRoom + 2) {
+        scale = widthRoom / fitNaturalW;
+        if (capAtOne) scale = Math.min(scale, 1);
+      }
 
       app.style.transform = `scale(${scale})`;
 
-      // Paint-pass: shrink only if clearly overflowing, then grow into leftover
-      // vertical room (with 1px safety) so we don't leave a large empty strip.
-      const SAFETY = 1;
-      let painted = app.getBoundingClientRect();
-      if (painted.height > heightRoom + SAFETY || painted.width > widthRoom + SAFETY) {
-        const fix = Math.min(
-          painted.height > heightRoom + SAFETY
-            ? (heightRoom - SAFETY) / painted.height
-            : 1,
-          painted.width > widthRoom + SAFETY ? widthRoom / painted.width : 1
-        );
-        scale = Math.max(0.05, scale * fix);
+      // Soft height clamp if paint still spills (stale natural size / wrap).
+      const painted = app.getBoundingClientRect();
+      if (painted.height > heightRoom + 2) {
+        scale = Math.max(0.05, scale * (heightRoom / painted.height));
         if (capAtOne) scale = Math.min(scale, 1);
         app.style.transform = `scale(${scale})`;
-        painted = app.getBoundingClientRect();
-      }
-      if (painted.height > 1 && painted.width > 1) {
-        const grow = Math.min(
-          (heightRoom - SAFETY) / painted.height,
-          widthRoom / painted.width
-        );
-        if (grow > 1.002) {
-          scale = Math.max(0.05, scale * grow);
-          if (capAtOne) scale = Math.min(scale, 1);
-          app.style.transform = `scale(${scale})`;
-        }
       }
 
       if (
@@ -224,7 +196,6 @@
         app.classList.contains("is-fitted") &&
         Math.abs(scale - appliedScale) < scaleEpsilon
       ) {
-        // Still keep the corrected transform from above.
         appliedScale = scale;
         return;
       }
