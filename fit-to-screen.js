@@ -83,10 +83,17 @@
         stage.style.height = "";
         return;
       }
-      stage.style.top = `${vv.offsetTop}px`;
-      stage.style.left = `${vv.offsetLeft}px`;
-      stage.style.width = `${vv.width}px`;
-      stage.style.height = `${vv.height}px`;
+      const top = vv.offsetTop;
+      const left = vv.offsetLeft;
+      const width = vv.width;
+      // visualViewport.height often ends above the home-indicator band (~30px /
+      // 5/16" on iPhone). That left empty screen under a correctly scaled app,
+      // so scale tweaks could not close the gap. Fill down to the layout bottom.
+      const height = Math.max(vv.height, root.innerHeight - top);
+      stage.style.top = `${top}px`;
+      stage.style.left = `${left}px`;
+      stage.style.width = `${width}px`;
+      stage.style.height = `${height}px`;
     }
 
     function viewportSizeMatchesFit() {
