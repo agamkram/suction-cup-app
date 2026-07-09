@@ -166,27 +166,43 @@
       if (!fitNaturalH || !fitNaturalW) return;
 
       const buffer = topBufferFor(layout);
-      // Height-first: fill the stage vertically. Only yield to width when it
-      // would overflow by more than 2px (avoids tiny width errors leaving a
-      // large empty bottom strip).
-      const heightRoom = Math.max(1, availH - buffer);
+      // Conservative fit: take the tighter of height/width so nothing clips.
+      // Small safety margin absorbs iOS subpixel / safe-area jitter.
+      const SAFETY = 6;
+      const heightRoom = Math.max(1, availH - buffer - SAFETY);
       const widthRoom = Math.max(1, availW);
       const capAtOne = getCapScaleAtOne
         ? getCapScaleAtOne(layout, availW, availH)
         : capScaleAtOne;
-      let scale = heightRoom / fitNaturalH;
+      let scale = Math.min(heightRoom / fitNaturalH, widthRoom / fitNaturalW);
       if (capAtOne) scale = Math.min(scale, 1);
-      if (fitNaturalW * scale > widthRoom + 2) {
-        scale = widthRoom / fitNaturalW;
-        if (capAtOne) scale = Math.min(scale, 1);
-      }
+      if (!Number.isFinite(scale) || scale <= 0) scale = 1;
 
       app.style.transform = `scale(${scale})`;
 
-      // Soft height clamp if paint still spills (stale natural size / wrap).
-      const painted = app.getBoundingClientRect();
-      if (painted.height > heightRoom + 2) {
-        scale = Math.max(0.05, scale * (heightRoom / painted.height));
+      // Verify painted bounds against the real stage content box; shrink until
+      // fully inside (stops bottom cards getting clipped after data loads).
+      const cs = root.getComputedStyle(stage);
+      const padT = parseFloat(cs.paddingTop) || 0;
+      const padB = parseFloat(cs.paddingBottom) || 0;
+      const padL = parseFloat(cs.paddingLeft) || 0;
+      const padR = parseFloat(cs.paddingRight) || 0;
+      for (let i = 0; i < 4; i += 1) {
+        const stageRect = stage.getBoundingClientRect();
+        const painted = app.getBoundingClientRect();
+        const limitBottom = stageRect.bottom - padB - 1;
+        const limitRight = stageRect.right - padR - 1;
+        const contentH = Math.max(1, stageRect.height - padT - padB - 1);
+        const contentW = Math.max(1, stageRect.width - padL - padR - 1);
+        let fix = 1;
+        if (painted.bottom > limitBottom) {
+          fix = Math.min(fix, contentH / Math.max(1, painted.height));
+        }
+        if (painted.right > limitRight) {
+          fix = Math.min(fix, contentW / Math.max(1, painted.width));
+        }
+        if (fix >= 0.999) break;
+        scale = Math.max(0.05, scale * fix);
         if (capAtOne) scale = Math.min(scale, 1);
         app.style.transform = `scale(${scale})`;
       }

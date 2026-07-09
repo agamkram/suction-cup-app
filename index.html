@@ -785,7 +785,7 @@
   </dialog>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="fit-to-screen.js?v=10"></script>
+  <script src="fit-to-screen.js?v=11"></script>
   <script>
     const HPA_TO_PSI = 0.0145037738;
     const IDEAL_SEAL_PCT = 100;
@@ -982,6 +982,11 @@
       requestAnimationFrame(() => {
         requestAnimationFrame(() => fit.scheduleFitToScreen(true));
       });
+      // Late pass for iOS after fonts/wrap settle (prevents bottom-card clip).
+      setTimeout(() => {
+        fit.resetNaturalSize();
+        fit.scheduleFitToScreen(true);
+      }, 250);
     }
 
     function setLocationText(html, isError = false) {
