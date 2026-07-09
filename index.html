@@ -592,9 +592,9 @@
     @media (max-width: 767px) {
       .fit-stage {
         align-items: flex-start;
-        /* No bottom safe-area pad: that was leaving ~1/4" empty while cards clipped. */
+        /* No bottom safe-area pad: that was leaving empty space while cards clipped. */
         padding:
-          calc(env(safe-area-inset-top, 0px) + 0.125rem)
+          calc(env(safe-area-inset-top, 0px) + 0.1rem)
           max(0.25rem, env(safe-area-inset-right))
           0
           max(0.25rem, env(safe-area-inset-left));
@@ -602,8 +602,7 @@
 
       .app {
         transform-origin: top center;
-        /* Slightly tighter bottom pad inside the scaled canvas. */
-        padding-bottom: 0.35rem;
+        padding-bottom: 0.2rem;
       }
     }
 
@@ -785,7 +784,7 @@
   </dialog>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="fit-to-screen.js?v=11"></script>
+  <script src="fit-to-screen.js?v=12"></script>
   <script>
     const HPA_TO_PSI = 0.0145037738;
     const IDEAL_SEAL_PCT = 100;
