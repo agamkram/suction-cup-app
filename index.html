@@ -341,6 +341,20 @@
 
     .result-card {
       text-align: left;
+      /* Reclaim height after the resistance line so phone fit keeps bottom cards on-screen. */
+      padding-bottom: 0.12rem;
+    }
+
+    @media (max-width: 767px) {
+      .result-card input[type="range"] {
+        height: 1.05rem;
+      }
+
+      @media (pointer: coarse) {
+        .result-card input[type="range"] {
+          min-height: 30px;
+        }
+      }
     }
 
     .force-note {
