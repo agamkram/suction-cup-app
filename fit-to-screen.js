@@ -120,6 +120,25 @@
       onFit({ scale: 1, layout, availH: fitAvailH, availW: fitAvailW, fluid: true });
     }
 
+    function stageContentBox() {
+      const rect = stage.getBoundingClientRect();
+      const cs = root.getComputedStyle(stage);
+      const pt = parseFloat(cs.paddingTop) || 0;
+      const pb = parseFloat(cs.paddingBottom) || 0;
+      const pl = parseFloat(cs.paddingLeft) || 0;
+      const pr = parseFloat(cs.paddingRight) || 0;
+      return {
+        width: Math.max(0, rect.width - pl - pr),
+        height: Math.max(0, rect.height - pt - pb),
+      };
+    }
+
+    function measureNaturalSize() {
+      // Layout size ignores CSS transform, so no scale(1) flash needed.
+      fitNaturalH = app.offsetHeight;
+      fitNaturalW = app.offsetWidth;
+    }
+
     function fitToScreen(remasure = false) {
       if (!ensureElements() || !shouldFit()) return;
 
@@ -151,11 +170,7 @@
       app.dataset.layout = layout;
 
       if (remasure || viewportChanged || layoutChanged || !fitNaturalH) {
-        const alreadyFitted = app.classList.contains("is-fitted");
-        if (!alreadyFitted) app.style.transform = "scale(1)";
-        fitNaturalH = app.offsetHeight;
-        fitNaturalW = app.offsetWidth;
-        if (!alreadyFitted) app.style.transform = "";
+        measureNaturalSize();
         fitAvailH = availH;
         fitAvailW = availW;
         fitLayout = layout;
@@ -164,24 +179,43 @@
       if (!fitNaturalH || !fitNaturalW) return;
 
       const buffer = topBufferFor(layout);
-      let scale = Math.min(
-        (availH - buffer) / fitNaturalH,
-        availW / fitNaturalW
-      );
+      const box = stageContentBox();
+      // Prefer the real content box (after padding) over clientHeight alone.
+      const heightRoom = Math.max(1, Math.min(availH, box.height) - buffer);
+      const widthRoom = Math.max(1, Math.min(availW, box.width));
+      let scale = Math.min(heightRoom / fitNaturalH, widthRoom / fitNaturalW);
       const capAtOne = getCapScaleAtOne
         ? getCapScaleAtOne(layout, availW, availH)
         : capScaleAtOne;
       if (capAtOne) scale = Math.min(scale, 1);
+
+      app.style.transform = `scale(${scale})`;
+
+      // Second pass: if the painted box still overflows the stage (text wrap,
+      // safe-area quirks, stale natural size), shrink to the true bounds.
+      const painted = app.getBoundingClientRect();
+      const overflowH = painted.height - heightRoom;
+      const overflowW = painted.width - widthRoom;
+      if (overflowH > 0.5 || overflowW > 0.5) {
+        const fix = Math.min(
+          overflowH > 0.5 ? heightRoom / painted.height : 1,
+          overflowW > 0.5 ? widthRoom / painted.width : 1
+        );
+        scale = Math.max(0.05, scale * fix);
+        if (capAtOne) scale = Math.min(scale, 1);
+        app.style.transform = `scale(${scale})`;
+      }
 
       if (
         layoutReady &&
         app.classList.contains("is-fitted") &&
         Math.abs(scale - appliedScale) < scaleEpsilon
       ) {
+        // Still keep the corrected transform from above.
+        appliedScale = scale;
         return;
       }
 
-      app.style.transform = `scale(${scale})`;
       appliedScale = scale;
       if (!app.classList.contains("is-fitted")) {
         layoutShownAt = performance.now();

@@ -592,15 +592,18 @@
     @media (max-width: 767px) {
       .fit-stage {
         align-items: flex-start;
+        /* No bottom safe-area pad: that was leaving ~1/4" empty while cards clipped. */
         padding:
           calc(env(safe-area-inset-top, 0px) + 0.125rem)
-          max(0.35rem, env(safe-area-inset-right))
-          calc(env(safe-area-inset-bottom, 0px) + 0.2rem)
-          max(0.35rem, env(safe-area-inset-left));
+          max(0.25rem, env(safe-area-inset-right))
+          0
+          max(0.25rem, env(safe-area-inset-left));
       }
 
       .app {
         transform-origin: top center;
+        /* Slightly tighter bottom pad inside the scaled canvas. */
+        padding-bottom: 0.35rem;
       }
     }
 
@@ -970,13 +973,15 @@
         if (!isTabletViewport(availW, availH)) return "wide";
         return availW > availH ? "tablet-landscape" : "tablet-portrait";
       },
-      // Keep phone buffer tiny so fit uses nearly the full stage (was 14px dead space).
-      getTopBuffer: (layout) => (layout === "phone" ? 2 : 0),
+      getTopBuffer: () => 0,
     });
 
     function refitAfterContentChange() {
       fit.resetNaturalSize();
-      fit.scheduleFitToScreen(true);
+      // Double rAF so text wrap from yellow values is fully laid out first.
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => fit.scheduleFitToScreen(true));
+      });
     }
 
     function setLocationText(html, isError = false) {
