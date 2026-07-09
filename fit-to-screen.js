@@ -191,19 +191,32 @@
 
       app.style.transform = `scale(${scale})`;
 
-      // Second pass: if the painted box still overflows the stage (text wrap,
-      // safe-area quirks, stale natural size), shrink to the true bounds.
-      const painted = app.getBoundingClientRect();
-      const overflowH = painted.height - heightRoom;
-      const overflowW = painted.width - widthRoom;
-      if (overflowH > 0.5 || overflowW > 0.5) {
+      // Paint-pass: shrink only if clearly overflowing, then grow into leftover
+      // vertical room (with 1px safety) so we don't leave a large empty strip.
+      const SAFETY = 1;
+      let painted = app.getBoundingClientRect();
+      if (painted.height > heightRoom + SAFETY || painted.width > widthRoom + SAFETY) {
         const fix = Math.min(
-          overflowH > 0.5 ? heightRoom / painted.height : 1,
-          overflowW > 0.5 ? widthRoom / painted.width : 1
+          painted.height > heightRoom + SAFETY
+            ? (heightRoom - SAFETY) / painted.height
+            : 1,
+          painted.width > widthRoom + SAFETY ? widthRoom / painted.width : 1
         );
         scale = Math.max(0.05, scale * fix);
         if (capAtOne) scale = Math.min(scale, 1);
         app.style.transform = `scale(${scale})`;
+        painted = app.getBoundingClientRect();
+      }
+      if (painted.height > 1 && painted.width > 1) {
+        const grow = Math.min(
+          (heightRoom - SAFETY) / painted.height,
+          widthRoom / painted.width
+        );
+        if (grow > 1.002) {
+          scale = Math.max(0.05, scale * grow);
+          if (capAtOne) scale = Math.min(scale, 1);
+          app.style.transform = `scale(${scale})`;
+        }
       }
 
       if (
