@@ -173,8 +173,8 @@
       if (!fitNaturalH || !fitNaturalW) return;
 
       const buffer = topBufferFor(layout);
-      // Tight fit with a small safety margin (enough for iOS subpixels, not 5/16").
-      const SAFETY = 2;
+      // Small bottom clear so the last card isn't flush against the screen edge.
+      const SAFETY = 10;
       const heightRoom = Math.max(1, availH - buffer - SAFETY);
       const widthRoom = Math.max(1, availW);
       const capAtOne = getCapScaleAtOne
