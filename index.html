@@ -974,8 +974,7 @@
     const fit = FitToScreen.create({
       phoneMaxWidth: 480,
       wideAppWidth: 560,
-      // Phone + tablet + desktop all use scale-to-fit (same card layout).
-      // Tablets may scale *above* 1 so the UI is larger on iPad — no fluid reflow.
+      // Same card layout everywhere; tablets scale *above* 1 to fill more glass.
       useScaleForLayout: () => true,
       getLayoutName: (availW, availH) => {
         if (isDesktopPointer()) return "wide";
@@ -988,11 +987,13 @@
       getAppLayoutWidth: (availW, layout) => {
         if (layout === "phone") return Math.min(availW, 420);
         if (layout === "tablet-portrait" || layout === "tablet-landscape") {
-          // Wider stage than phone, then scale up to use the glass.
-          return Math.min(Math.round(availW * 0.78), 680);
+          // Keep a *phone-width* stage so scale-up multiplies the whole UI.
+          // (A wide stage was height-capped and looked smaller on iPad.)
+          return Math.min(400, availW);
         }
         return 560;
       },
+      // Tablets: allow scale > 1. Phone/desktop stay capped at 1.
       getCapScaleAtOne: (layout) =>
         layout !== "tablet-portrait" && layout !== "tablet-landscape",
       getTopBuffer: () => 0,
