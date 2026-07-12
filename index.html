@@ -109,94 +109,60 @@
       visibility: hidden;
     }
 
-    /*
-     * Fluid full-bleed (phone + tablet): fill the stage, no letterbox, no page scroll.
-     * Desktop "wide" still uses scale-to-fit card via FitToScreen.
-     */
     .fit-stage--fluid {
-      overflow: hidden;
-      align-items: stretch;
-      justify-content: stretch;
-      padding:
-        max(0.2rem, env(safe-area-inset-top, 0px))
-        max(0.3rem, env(safe-area-inset-right, 0px))
-        env(safe-area-inset-bottom, 0px)
-        max(0.3rem, env(safe-area-inset-left, 0px));
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      align-items: center;
+      justify-content: flex-start;
     }
 
     .fit-stage--fluid > .app {
       transform: none !important;
       width: 100% !important;
-      height: 100% !important;
-      max-width: none !important;
-      max-height: none !important;
-      min-height: 0;
-      margin: 0;
+      max-width: 35rem;
+      margin: 0 auto;
       will-change: auto;
-      box-sizing: border-box;
     }
 
-    /* Phone + tablet portrait: column stack, grow result card into free height */
-    .fit-stage--fluid > .app[data-layout="phone"],
-    .fit-stage--fluid > .app[data-layout="tablet-portrait"] {
-      display: flex;
-      flex-direction: column;
-      gap: 0.4rem;
-      padding: 0.35rem 0.45rem 0.2rem;
-      --app-gap: 0.4rem;
+    .fit-stage--fluid > .app[data-layout="wide"] {
+      max-width: 35rem;
+      padding: 0.5rem 0.65rem 0.65rem;
+      --app-gap: 0.5rem;
+      --text-title: 1.15rem;
+      --text-prose: 0.95rem;
+      --text-stat: 0.9rem;
+      --text-ui: 0.75rem;
       --card-pad-y: 0.45rem;
       --card-pad-x: 0.55rem;
     }
 
-    .fit-stage--fluid > .app[data-layout="phone"] > header,
-    .fit-stage--fluid > .app[data-layout="phone"] > .pressure-card,
-    .fit-stage--fluid > .app[data-layout="phone"] > .weight-card,
-    .fit-stage--fluid > .app[data-layout="phone"] > .air-composition-card,
-    .fit-stage--fluid > .app[data-layout="tablet-portrait"] > header,
-    .fit-stage--fluid > .app[data-layout="tablet-portrait"] > .pressure-card,
-    .fit-stage--fluid > .app[data-layout="tablet-portrait"] > .weight-card,
-    .fit-stage--fluid > .app[data-layout="tablet-portrait"] > .air-composition-card {
-      flex: 0 0 auto;
-    }
-
-    .fit-stage--fluid > .app[data-layout="phone"] > .result-card,
-    .fit-stage--fluid > .app[data-layout="tablet-portrait"] > .result-card {
-      flex: 1 1 auto;
-      min-height: 0;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
+    .fit-stage--fluid > .app[data-layout="tablet-portrait"],
+    .fit-stage--fluid > .app[data-layout="tablet-landscape"] {
+      max-width: 100%;
+      padding: 0.65rem 0.85rem 0.85rem;
+      --text-title: 1.35rem;
+      --text-prose: 1.05rem;
+      --text-stat: 1rem;
+      --card-pad-y: 0.5rem;
+      --card-pad-x: 0.6rem;
     }
 
     .fit-stage--fluid > .app[data-layout="tablet-portrait"] {
-      padding: 0.5rem 0.7rem 0.35rem;
-      gap: 0.5rem;
-      --app-gap: 0.5rem;
-      --text-title: 1.3rem;
-      --text-prose: 1.02rem;
-      --text-stat: 0.98rem;
-      --text-ui: 0.78rem;
-      --card-pad-y: 0.55rem;
-      --card-pad-x: 0.65rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+      --app-gap: 0.55rem;
     }
 
     .fit-stage--fluid > .app[data-layout="tablet-portrait"] .force-tip {
       display: none;
     }
 
-    /* Tablet landscape: 2×2 grid fills height */
     .fit-stage--fluid > .app[data-layout="tablet-landscape"] {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      grid-template-rows: auto minmax(0, 1fr) minmax(0, 1fr);
-      gap: 0.55rem;
-      padding: 0.45rem 0.7rem 0.3rem;
+      gap: 0.65rem;
       --app-gap: 0;
-      --text-title: 1.25rem;
-      --text-prose: 1rem;
-      --text-stat: 0.95rem;
-      --card-pad-y: 0.5rem;
-      --card-pad-x: 0.6rem;
     }
 
     .fit-stage--fluid > .app[data-layout="tablet-landscape"] > header {
@@ -206,41 +172,27 @@
     .fit-stage--fluid > .app[data-layout="tablet-landscape"] > .pressure-card {
       grid-column: 1;
       grid-row: 2;
-      min-height: 0;
     }
 
     .fit-stage--fluid > .app[data-layout="tablet-landscape"] > .result-card {
       grid-column: 2;
       grid-row: 2;
-      min-height: 0;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
+      align-self: start;
     }
 
     .fit-stage--fluid > .app[data-layout="tablet-landscape"] > .weight-card {
       grid-column: 1;
       grid-row: 3;
-      min-height: 0;
     }
 
     .fit-stage--fluid > .app[data-layout="tablet-landscape"] > .air-composition-card {
       grid-column: 2;
       grid-row: 3;
-      min-height: 0;
+      align-self: start;
     }
 
     .fit-stage--fluid > .app[data-layout="tablet-landscape"] .force-tip {
       display: none;
-    }
-
-    /* Desktop only (when fluid is not used, this is unused; kept if wide ever fluid) */
-    .fit-stage--fluid > .app[data-layout="wide"] {
-      max-width: 35rem;
-      height: auto !important;
-      margin: 0 auto;
-      padding: 0.5rem 0.65rem 0.65rem;
-      --app-gap: 0.5rem;
     }
 
     header {
@@ -644,8 +596,24 @@
       color: var(--text);
     }
 
-    /* Desktop card mode (scale-to-fit, not fluid) */
-    @media (hover: hover) and (pointer: fine) and (min-width: 900px) {
+    @media (max-width: 767px) {
+      .fit-stage {
+        align-items: flex-start;
+        /* No bottom safe-area pad: that was leaving empty space while cards clipped. */
+        padding:
+          calc(env(safe-area-inset-top, 0px) + 0.1rem)
+          max(0.25rem, env(safe-area-inset-right))
+          0
+          max(0.25rem, env(safe-area-inset-left));
+      }
+
+      .app {
+        transform-origin: top center;
+        padding-bottom: 0.35rem;
+      }
+    }
+
+    @media (min-width: 768px) {
       .fit-stage {
         padding:
           max(0.35rem, env(safe-area-inset-top))
@@ -665,13 +633,6 @@
 
       .pressure-illus {
         max-width: 108px;
-      }
-    }
-
-    @media (pointer: coarse) {
-      .result-card input[type="range"],
-      .weight-card input[type="range"] {
-        min-height: 30px;
       }
     }
 
@@ -987,6 +948,10 @@
       refitAfterContentChange();
     }
 
+    function isPhoneViewport(availW, availH) {
+      return Math.min(availW, availH) <= 480;
+    }
+
     function isDesktopPointer() {
       return (
         navigator.maxTouchPoints === 0 &&
@@ -994,19 +959,24 @@
       );
     }
 
-    function isPhoneViewport(availW, availH) {
-      // Short side of the viewport — phones + most large phones in either orientation.
-      return Math.min(availW, availH) <= 520;
+    function isTabletViewport(availW, availH) {
+      if (isDesktopPointer()) return false;
+      const shortSide = Math.min(availW, availH);
+      const longSide = Math.max(availW, availH);
+      return (
+        shortSide >= 744 &&
+        longSide <= 1400 &&
+        (navigator.maxTouchPoints > 0 || window.matchMedia("(pointer: coarse)").matches)
+      );
     }
 
     const fit = FitToScreen.create({
-      phoneMaxWidth: 520,
+      phoneMaxWidth: 480,
       wideAppWidth: 560,
-      // Scale fixed card only on real desktop. Phone + iPad (P/L) use full-bleed fluid.
-      useScaleForLayout: (layout) => layout === "wide",
+      useScaleForLayout: (layout) => layout === "phone" || layout === "wide",
       getLayoutName: (availW, availH) => {
-        if (isDesktopPointer()) return "wide";
         if (isPhoneViewport(availW, availH)) return "phone";
+        if (!isTabletViewport(availW, availH)) return "wide";
         return availW > availH ? "tablet-landscape" : "tablet-portrait";
       },
       getTopBuffer: () => 0,
