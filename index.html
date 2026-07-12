@@ -963,8 +963,9 @@
       if (isDesktopPointer()) return false;
       const shortSide = Math.min(availW, availH);
       const longSide = Math.max(availW, availH);
+      // iPad / similar: touch + short side at least ~iPad mini, not desktop width.
       return (
-        shortSide >= 744 &&
+        shortSide >= 600 &&
         longSide <= 1400 &&
         (navigator.maxTouchPoints > 0 || window.matchMedia("(pointer: coarse)").matches)
       );
@@ -973,12 +974,27 @@
     const fit = FitToScreen.create({
       phoneMaxWidth: 480,
       wideAppWidth: 560,
-      useScaleForLayout: (layout) => layout === "phone" || layout === "wide",
+      // Phone + tablet + desktop all use scale-to-fit (same card layout).
+      // Tablets may scale *above* 1 so the UI is larger on iPad — no fluid reflow.
+      useScaleForLayout: () => true,
       getLayoutName: (availW, availH) => {
+        if (isDesktopPointer()) return "wide";
         if (isPhoneViewport(availW, availH)) return "phone";
-        if (!isTabletViewport(availW, availH)) return "wide";
-        return availW > availH ? "tablet-landscape" : "tablet-portrait";
+        if (isTabletViewport(availW, availH)) {
+          return availW > availH ? "tablet-landscape" : "tablet-portrait";
+        }
+        return "phone";
       },
+      getAppLayoutWidth: (availW, layout) => {
+        if (layout === "phone") return Math.min(availW, 420);
+        if (layout === "tablet-portrait" || layout === "tablet-landscape") {
+          // Wider stage than phone, then scale up to use the glass.
+          return Math.min(Math.round(availW * 0.78), 680);
+        }
+        return 560;
+      },
+      getCapScaleAtOne: (layout) =>
+        layout !== "tablet-portrait" && layout !== "tablet-landscape",
       getTopBuffer: () => 0,
     });
 
