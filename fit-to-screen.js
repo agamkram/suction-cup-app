@@ -76,7 +76,16 @@
     function syncFitStageViewport() {
       if (!ensureElements()) return;
       const vv = root.visualViewport;
-      if (!vv || !isPhoneLayout(root.innerWidth)) {
+      // Use visualViewport on phone *and* tablet widths (not only ≤phoneMaxWidth).
+      // iPad was skipping this and under-measuring available height for scale-up.
+      const useVv =
+        vv &&
+        (isPhoneLayout(root.innerWidth) ||
+          (root.innerWidth <= 1366 &&
+            (root.navigator?.maxTouchPoints > 0 ||
+              root.matchMedia?.("(pointer: coarse)")?.matches ||
+              root.matchMedia?.("(hover: none)")?.matches)));
+      if (!useVv) {
         stage.style.top = "";
         stage.style.left = "";
         stage.style.width = "";

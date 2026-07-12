@@ -613,7 +613,47 @@
       }
     }
 
-    @media (min-width: 768px) {
+    /* iPad / large tablets — wider type + tighter stage pad so scale path reads large */
+    @media (min-width: 768px) and (max-width: 1366px) and (hover: none),
+      (min-width: 768px) and (max-width: 1366px) and (pointer: coarse) {
+      .fit-stage {
+        align-items: center;
+        justify-content: center;
+        padding:
+          max(0.3rem, env(safe-area-inset-top, 0px))
+          max(0.4rem, env(safe-area-inset-right, 0px))
+          max(0.3rem, env(safe-area-inset-bottom, 0px))
+          max(0.4rem, env(safe-area-inset-left, 0px));
+      }
+
+      .app {
+        transform-origin: center center;
+        padding: 0.55rem 0.7rem 0.55rem;
+        --app-gap: 0.55rem;
+        --text-title: 1.35rem;
+        --text-prose: 1.05rem;
+        --text-stat: 1rem;
+        --text-ui: 0.8rem;
+        --card-pad-y: 0.55rem;
+        --card-pad-x: 0.7rem;
+      }
+
+      .pressure-card {
+        grid-template-columns: minmax(100px, 32%) 1fr;
+      }
+
+      .pressure-illus {
+        max-width: 120px;
+      }
+
+      .app[data-layout="tablet-portrait"] .force-tip,
+      .app[data-layout="tablet-landscape"] .force-tip {
+        display: none;
+      }
+    }
+
+    /* Desktop pointer only */
+    @media (hover: hover) and (pointer: fine) and (min-width: 900px) {
       .fit-stage {
         padding:
           max(0.35rem, env(safe-area-inset-top))
@@ -948,10 +988,6 @@
       refitAfterContentChange();
     }
 
-    function isPhoneViewport(availW, availH) {
-      return Math.min(availW, availH) <= 480;
-    }
-
     function isDesktopPointer() {
       return (
         navigator.maxTouchPoints === 0 &&
@@ -959,41 +995,34 @@
       );
     }
 
-    function isTabletViewport(availW, availH) {
-      if (isDesktopPointer()) return false;
-      const shortSide = Math.min(availW, availH);
-      const longSide = Math.max(availW, availH);
-      // iPad / similar: touch + short side at least ~iPad mini, not desktop width.
+    function isTouchLike() {
       return (
-        shortSide >= 600 &&
-        longSide <= 1400 &&
-        (navigator.maxTouchPoints > 0 || window.matchMedia("(pointer: coarse)").matches)
+        navigator.maxTouchPoints > 0 ||
+        window.matchMedia("(pointer: coarse)").matches ||
+        window.matchMedia("(hover: none)").matches
       );
     }
 
     const fit = FitToScreen.create({
       phoneMaxWidth: 480,
       wideAppWidth: 560,
-      // Same card layout everywhere; tablets scale *above* 1 to fill more glass.
       useScaleForLayout: () => true,
       getLayoutName: (availW, availH) => {
-        if (isDesktopPointer()) return "wide";
-        if (isPhoneViewport(availW, availH)) return "phone";
-        if (isTabletViewport(availW, availH)) {
-          return availW > availH ? "tablet-landscape" : "tablet-portrait";
-        }
-        return "phone";
+        // Mac/PC only → desktop card. All touch devices → phone or tablet scale path.
+        if (isDesktopPointer() && !isTouchLike()) return "wide";
+        if (Math.min(availW, availH) <= 500) return "phone";
+        return availW > availH ? "tablet-landscape" : "tablet-portrait";
       },
       getAppLayoutWidth: (availW, layout) => {
         if (layout === "phone") return Math.min(availW, 420);
         if (layout === "tablet-portrait" || layout === "tablet-landscape") {
-          // Keep a *phone-width* stage so scale-up multiplies the whole UI.
-          // (A wide stage was height-capped and looked smaller on iPad.)
-          return Math.min(400, availW);
+          // Nearly full iPad width so we don't sit as a phone strip with huge side mats.
+          // (Phone-width + scale≤1 was only ~400px painted — looked tiny.)
+          return Math.max(520, Math.min(availW - 40, 780));
         }
         return 560;
       },
-      // Tablets: allow scale > 1. Phone/desktop stay capped at 1.
+      // Tablets: scale may exceed 1 when there's spare height.
       getCapScaleAtOne: (layout) =>
         layout !== "tablet-portrait" && layout !== "tablet-landscape",
       getTopBuffer: () => 0,
