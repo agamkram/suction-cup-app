@@ -1003,28 +1003,28 @@
       );
     }
 
+    // Fixed artboard width — same proportions everywhere; scale to the largest
+    // size that still fits the viewport (letterbox only if aspect differs).
+    const TOUCH_ARTBOARD_W = 400;
+    const DESKTOP_ARTBOARD_W = 560;
+
     const fit = FitToScreen.create({
       phoneMaxWidth: 480,
-      wideAppWidth: 560,
+      wideAppWidth: DESKTOP_ARTBOARD_W,
       useScaleForLayout: () => true,
       getLayoutName: (availW, availH) => {
-        // Mac/PC only → desktop card. All touch devices → phone or tablet scale path.
         if (isDesktopPointer() && !isTouchLike()) return "wide";
         if (Math.min(availW, availH) <= 500) return "phone";
         return availW > availH ? "tablet-landscape" : "tablet-portrait";
       },
       getAppLayoutWidth: (availW, layout) => {
-        if (layout === "phone") return Math.min(availW, 420);
-        if (layout === "tablet-portrait" || layout === "tablet-landscape") {
-          // Nearly full iPad width so we don't sit as a phone strip with huge side mats.
-          // (Phone-width + scale≤1 was only ~400px painted — looked tiny.)
-          return Math.max(520, Math.min(availW - 40, 780));
-        }
-        return 560;
+        if (layout === "wide") return DESKTOP_ARTBOARD_W;
+        // Phone + iPad share one artboard so scale is purely "as large as possible".
+        return TOUCH_ARTBOARD_W;
       },
-      // Tablets: scale may exceed 1 when there's spare height.
-      getCapScaleAtOne: (layout) =>
-        layout !== "tablet-portrait" && layout !== "tablet-landscape",
+      // Touch: never cap at 1 — grow until width or height hits the glass.
+      // Desktop: keep a modest card (don't billboard a 5K monitor).
+      getCapScaleAtOne: (layout) => layout === "wide",
       getTopBuffer: () => 0,
     });
 
