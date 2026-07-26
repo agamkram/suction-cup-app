@@ -1,0 +1,21 @@
+{
+  "name": "The Weight of Air and the Suction Cup",
+  "short_name": "Suction Cup",
+  "description": "Live pressure at your location and suction cup pull force",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f1419",
+  "theme_color": "#0f1419",
+  "icons": [
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}
