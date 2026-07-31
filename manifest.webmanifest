@@ -1,6 +1,6 @@
 {
   "name": "The Weight of Air and the Suction Cup",
-  "short_name": "Suction Cup",
+  "short_name": "SuctionCup",
   "description": "Live pressure at your location and suction cup pull force",
   "start_url": "/",
   "display": "standalone",
