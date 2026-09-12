@@ -61,6 +61,8 @@
   <link rel="icon" type="image/png" href="icon-192.png" />
   <link rel="apple-touch-icon" href="apple-touch-icon.png" />
   <link rel="preconnect" href="https://api.open-meteo.com" crossorigin />
+  <link rel="preconnect" href="https://nominatim.openstreetmap.org" crossorigin />
+  <link rel="preconnect" href="https://server.arcgisonline.com" crossorigin />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
@@ -644,13 +646,83 @@
       min-height: 0;
     }
 
-    .map-hint {
+    .map-search {
+      position: relative;
+      z-index: 1100;
+      flex: 0 0 auto;
+      margin: 0 0 0.35rem;
+    }
+
+    .map-search-input {
+      width: 100%;
+      height: 1.65rem;
+      margin: 0;
+      padding: 0 0.5rem;
+      font: inherit;
       font-size: var(--text-ui);
       font-weight: 500;
+      line-height: 1.65rem;
+      color: var(--text);
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      outline: none;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+
+    .map-search-input::placeholder {
       color: var(--muted);
-      margin: 0 0 0.35rem;
-      line-height: 1.35;
-      flex: 0 0 auto;
+    }
+
+    .map-search-input:focus {
+      border-color: var(--accent);
+    }
+
+    .map-search-input::-webkit-search-decoration,
+    .map-search-input::-webkit-search-cancel-button {
+      -webkit-appearance: none;
+    }
+
+    .map-search-results {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: calc(100% - 1px);
+      margin: 0;
+      padding: 0.15rem 0;
+      list-style: none;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 0 0 6px 5px;
+      max-height: 8.5rem;
+      overflow-x: hidden;
+      overflow-y: auto;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
+    }
+
+    .map-search-results[hidden] {
+      display: none !important;
+    }
+
+    .map-search-results button {
+      display: block;
+      width: 100%;
+      text-align: left;
+      font: inherit;
+      font-size: var(--text-ui);
+      font-weight: 500;
+      color: var(--text);
+      background: transparent;
+      border: none;
+      padding: 0.28rem 0.5rem;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    .map-search-results button:hover,
+    .map-search-results button:focus {
+      background: rgba(61, 156, 245, 0.16);
     }
 
     .location-map {
@@ -986,7 +1058,22 @@
   >
     <div class="location-dialog-card">
       <form id="location-form">
-        <p class="map-hint">Tap or click the map to place a pin</p>
+        <div class="map-search">
+          <input
+            id="place-search"
+            class="map-search-input"
+            type="search"
+            placeholder="Search a peak or place"
+            autocomplete="off"
+            autocorrect="off"
+            spellcheck="false"
+            enterkeyhint="search"
+            aria-label="Search a peak or place"
+            aria-autocomplete="list"
+            aria-controls="place-results"
+          />
+          <ul id="place-results" class="map-search-results" hidden></ul>
+        </div>
         <div id="location-map" class="location-map" role="application" aria-label="Location map"></div>
         <div class="map-footer">
           <p class="map-coords" id="map-coords">—</p>
@@ -1059,6 +1146,71 @@
     const locationForm = document.getElementById("location-form");
     const cancelLocationBtn = document.getElementById("cancel-location");
     const mapCoordsEl = document.getElementById("map-coords");
+    const placeSearchEl = document.getElementById("place-search");
+    const placeResultsEl = document.getElementById("place-results");
+    let searchTimer = 0;
+    let searchAbort = null;
+    let searchResults = [];
+    let pickPlaceName = null;
+
+    const FAMOUS_PLACES = [
+      {
+        aliases: ["everest", "mt everest", "mount everest"],
+        name: "Mount Everest",
+        region: "Nepal",
+        latitude: 27.9880614,
+        longitude: 86.92521,
+      },
+      {
+        aliases: ["mt evans", "mount evans", "mount blue sky", "blue sky"],
+        name: "Mount Evans (Blue Sky)",
+        region: "Colorado, United States",
+        latitude: 39.5883492,
+        longitude: -105.643699,
+      },
+      {
+        aliases: ["death valley", "badwater", "badwater basin"],
+        name: "Badwater Basin",
+        region: "Death Valley, California",
+        latitude: 36.2302592,
+        longitude: -116.7674441,
+      },
+      {
+        aliases: ["denali", "mount mckinley", "mt mckinley"],
+        name: "Denali",
+        region: "Alaska, United States",
+        latitude: 63.069115,
+        longitude: -151.006239,
+      },
+      {
+        aliases: ["dead sea"],
+        name: "Dead Sea",
+        region: "Jordan / Israel",
+        latitude: 31.541946,
+        longitude: 35.4812013,
+      },
+      {
+        aliases: ["kilimanjaro", "mt kilimanjaro", "mount kilimanjaro"],
+        name: "Mount Kilimanjaro",
+        region: "Tanzania",
+        latitude: -3.076475,
+        longitude: 37.353041,
+      },
+      {
+        aliases: ["whitney", "mt whitney", "mount whitney"],
+        name: "Mount Whitney",
+        region: "California, United States",
+        latitude: 36.578581,
+        longitude: -118.291995,
+      },
+      {
+        aliases: ["rainier", "mt rainier", "mount rainier"],
+        name: "Mount Rainier",
+        region: "Washington, United States",
+        latitude: 46.852947,
+        longitude: -121.760424,
+      },
+    ];
 
     function formatCoord(value, positive, negative) {
       const abs = Math.abs(value).toFixed(2);
@@ -1248,6 +1400,8 @@
 
     function closeLocationDialog() {
       locationDialog.hidden = true;
+      hidePlaceResults();
+      placeSearchEl.value = "";
     }
 
     const fit = FitToScreen.create({
@@ -1323,8 +1477,9 @@
       try {
         await fetchWeather(lat, lon);
         const elevation = formatElevation(state.elevationM);
-        const elevationPrefix = elevation ? `<strong>${elevation}</strong> · ` : "";
-        setLocationText(`${elevationPrefix}${latText}, ${lonText}`);
+        const nameBit = pickPlaceName ? `<strong>${pickPlaceName}</strong> · ` : "";
+        const elevationBit = elevation ? `<strong>${elevation}</strong> · ` : "";
+        setLocationText(`${nameBit}${elevationBit}${latText}, ${lonText}`);
         refitAfterContentChange();
       } catch (error) {
         pressureInlineEl.textContent = "—";
@@ -1337,6 +1492,7 @@
     }
 
     function requestLocation(openPickerOnFail = true) {
+      pickPlaceName = null;
       if (!navigator.geolocation) {
         setLocationText("Geolocation unavailable", true);
         if (openPickerOnFail) openLocationDialog();
@@ -1361,6 +1517,140 @@
       );
     }
 
+    function expandPlaceQuery(query) {
+      return query
+        .replace(/\bmtn\.?\b/gi, "Mountain")
+        .replace(/\bmt\.?\b/gi, "Mount")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    function normalizePlaceQuery(query) {
+      return expandPlaceQuery(query).toLowerCase();
+    }
+
+    function placeLabel(place) {
+      const parts = [place.name];
+      if (place.region && place.region !== place.name) parts.push(place.region);
+      return parts.filter(Boolean).join(", ");
+    }
+
+    function famousPlaceMatches(query) {
+      const n = normalizePlaceQuery(query);
+      if (n.length < 2) return [];
+      return FAMOUS_PLACES.filter((place) =>
+        place.aliases.some((alias) => alias.startsWith(n) || n.startsWith(alias))
+      );
+    }
+
+    function nominatimRegion(result) {
+      const address = result.address || {};
+      return [address.state, address.country]
+        .filter((part, index, parts) => part && parts.indexOf(part) === index)
+        .join(", ");
+    }
+
+    function keepNominatimResult(result) {
+      const skip = new Set(["highway", "railway", "amenity", "shop", "office", "building"]);
+      if (skip.has(result.class)) return false;
+      if (result.class === "tourism" && !["attraction", "viewpoint"].includes(result.type)) {
+        return false;
+      }
+      return Number.isFinite(Number(result.lat)) && Number.isFinite(Number(result.lon));
+    }
+
+    function fromNominatim(result) {
+      return {
+        name: result.name || (result.display_name || "").split(",")[0],
+        region: nominatimRegion(result),
+        latitude: Number(result.lat),
+        longitude: Number(result.lon),
+      };
+    }
+
+    function samePlace(a, b) {
+      return (
+        Math.abs(a.latitude - b.latitude) < 0.08 &&
+        Math.abs(a.longitude - b.longitude) < 0.08
+      );
+    }
+
+    function hidePlaceResults() {
+      placeResultsEl.hidden = true;
+      placeResultsEl.innerHTML = "";
+      searchResults = [];
+    }
+
+    function showPlaceResults(places) {
+      searchResults = places;
+      placeResultsEl.innerHTML = "";
+      if (!places.length) {
+        hidePlaceResults();
+        return;
+      }
+      places.forEach((place) => {
+        const item = document.createElement("li");
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.textContent = placeLabel(place);
+        btn.addEventListener("mousedown", (event) => event.preventDefault());
+        btn.addEventListener("click", () => applyPlace(place));
+        item.appendChild(btn);
+        placeResultsEl.appendChild(item);
+      });
+      placeResultsEl.hidden = false;
+    }
+
+    function applyPlace(place) {
+      hidePlaceResults();
+      pickPlaceName = place.name;
+      placeSearchEl.value = placeLabel(place);
+      placeSearchEl.blur();
+      const lat = place.latitude;
+      const lon = place.longitude;
+      if (!locationMap || !Number.isFinite(lat) || !Number.isFinite(lon)) return;
+      locationMap.setView([lat, lon], 10);
+      setMapPin(lat, lon);
+    }
+
+    async function searchPlaces(query) {
+      const raw = query.trim();
+      if (raw.length < 2) {
+        hidePlaceResults();
+        return;
+      }
+      const expanded = expandPlaceQuery(raw);
+      const famous = famousPlaceMatches(raw);
+      if (searchAbort) searchAbort.abort();
+      searchAbort = new AbortController();
+      try {
+        const url = new URL("https://nominatim.openstreetmap.org/search");
+        url.searchParams.set("q", expanded);
+        url.searchParams.set("format", "jsonv2");
+        url.searchParams.set("addressdetails", "1");
+        url.searchParams.set("limit", "6");
+        url.searchParams.set("accept-language", "en");
+        const res = await fetch(url, { signal: searchAbort.signal });
+        if (!res.ok) {
+          showPlaceResults(famous);
+          return;
+        }
+        const data = await res.json();
+        if (placeSearchEl.value.trim() !== raw) return;
+        const remote = (Array.isArray(data) ? data : [])
+          .filter(keepNominatimResult)
+          .map(fromNominatim);
+        const merged = [...famous];
+        remote.forEach((place) => {
+          if (!merged.some((existing) => samePlace(existing, place))) merged.push(place);
+        });
+        showPlaceResults(merged.slice(0, 6));
+      } catch (err) {
+        if (err && err.name === "AbortError") return;
+        showPlaceResults(famous);
+      }
+    }
+
     function updateMapCoordsDisplay() {
       mapCoordsEl.textContent = `${pickLat.toFixed(4)}°, ${pickLon.toFixed(4)}°`;
     }
@@ -1378,6 +1668,7 @@
         locationMarker = L.marker([lat, lon], { draggable: true }).addTo(locationMap);
         locationMarker.on("dragend", () => {
           const pos = locationMarker.getLatLng();
+          pickPlaceName = null;
           setMapPin(pos.lat, pos.lng);
         });
       }
@@ -1410,15 +1701,21 @@
         markerZoomAnimation: false,
       });
 
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        maxZoom: 19,
-        updateWhenZooming: false,
-        keepBuffer: 2,
-        attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-      }).addTo(locationMap);
+      /* Esri World Street Map: English labels worldwide (OSM uses local scripts). */
+      L.tileLayer(
+        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
+        {
+          maxZoom: 19,
+          updateWhenZooming: false,
+          keepBuffer: 2,
+          attribution:
+            'Tiles &copy; <a href="https://www.esri.com/">Esri</a> · Search &copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+        }
+      ).addTo(locationMap);
 
       locationMap.on("click", (event) => {
+        hidePlaceResults();
+        pickPlaceName = null;
         setMapPin(event.latlng.lat, event.latlng.lng);
       });
     }
@@ -1467,6 +1764,22 @@
     chooseLocationBtn.addEventListener("click", openLocationDialog);
     cancelLocationBtn.addEventListener("click", () => closeLocationDialog());
 
+    placeSearchEl.addEventListener("input", () => {
+      clearTimeout(searchTimer);
+      searchTimer = window.setTimeout(() => searchPlaces(placeSearchEl.value), 400);
+    });
+
+    placeSearchEl.addEventListener("keydown", async (event) => {
+      if (event.key !== "Enter") return;
+      event.preventDefault();
+      if (searchResults[0]) {
+        applyPlace(searchResults[0]);
+        return;
+      }
+      await searchPlaces(placeSearchEl.value);
+      if (searchResults[0]) applyPlace(searchResults[0]);
+    });
+
     locationForm.addEventListener("submit", (event) => {
       event.preventDefault();
       if (Number.isFinite(pickLat) && Number.isFinite(pickLon)) {
@@ -1480,9 +1793,12 @@
     });
 
     document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape" && !locationDialog.hidden) {
-        closeLocationDialog();
+      if (event.key !== "Escape" || locationDialog.hidden) return;
+      if (!placeResultsEl.hidden) {
+        hidePlaceResults();
+        return;
       }
+      closeLocationDialog();
     });
 
     function renderPressureArrows() {
