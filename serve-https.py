@@ -13,8 +13,7 @@ import threading
 import time
 
 ROOT = Path(__file__).resolve().parent
-DEFAULT_PORT = 8875
-HTTP_PORT = 8876
+DEFAULT_PORT = 8885
 CERT = ROOT / ".local-cert.pem"
 KEY = ROOT / ".local-key.pem"
 
@@ -37,13 +36,6 @@ class Handler(SimpleHTTPRequestHandler):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(ROOT), **kwargs)
-
-    def do_GET(self):
-        path = (self.path or "/").split("?", 1)[0]
-        if path != "/" and not (ROOT / path.lstrip("/")).exists():
-            if not path.startswith("/api"):
-                self.path = "/index.html"
-        return super().do_GET()
 
     def guess_type(self, path):
         p = (path or "").split("?", 1)[0].lower()
@@ -218,8 +210,8 @@ def _free_ports(*ports):
     time.sleep(1)
 
 
-def _run_http():
-    http = ThreadingHTTPServer(("0.0.0.0", HTTP_PORT), Handler)
+def _run_http(http_port):
+    http = ThreadingHTTPServer(("0.0.0.0", http_port), Handler)
     http.is_https = False
     http.serve_forever()
 
@@ -229,8 +221,9 @@ def main():
     port = DEFAULT_PORT
     if argv:
         port = int(argv[0])
+    http_port = port + 1
 
-    _free_ports(port, HTTP_PORT)
+    _free_ports(port, http_port)
 
     lan = _lan_ips()
     hosts = _local_hostnames()
@@ -242,7 +235,7 @@ def main():
         print("Could not create .local-cert.pem / .local-key.pem", file=sys.stderr)
         sys.exit(1)
 
-    threading.Thread(target=_run_http, daemon=True).start()
+    threading.Thread(target=_run_http, args=(http_port,), daemon=True).start()
 
     httpsd = ThreadingHTTPServer(("0.0.0.0", port), Handler)
     httpsd.is_https = True
@@ -251,7 +244,7 @@ def main():
     httpsd.socket = ctx.wrap_socket(httpsd.socket, server_side=True)
 
     print("SuctionCup", flush=True)
-    print("  HTTP:   http://%s:%s/" % (lan_hint, HTTP_PORT), flush=True)
+    print("  HTTP:   http://%s:%s/" % (lan_hint, http_port), flush=True)
     print("  HTTPS:  https://%s:%s/" % (lan_hint, port), flush=True)
     if bonjour:
         print("          https://%s:%s/" % (bonjour, port), flush=True)

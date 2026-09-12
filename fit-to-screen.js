@@ -88,7 +88,7 @@
 
     function syncFitStageViewport() {
       if (!ensureElements()) return;
-      // Stage size stays CSS (lvh / fillH). Do not pin short visualViewport.
+      // Keep CSS stage size. Do not pin visualViewport onto the stage.
       stage.style.top = "";
       stage.style.left = "";
       stage.style.right = "";

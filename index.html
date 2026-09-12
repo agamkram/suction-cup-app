@@ -27,11 +27,7 @@
   <meta name="twitter:description" content="Live pressure at your location and suction cup pull force." />
   <meta name="twitter:image" content="https://air.markmaga.com/icon-512.png" />
   <title>The Weight of Air and the Suction Cup — live pressure and pull | Mark Maga</title>
-  <!--
-    Desktop iOS-full-bleed.txt — Bug B (PWA short layout viewport).
-    PWA: fillH = max(innerHeight, screen axis) BEFORE first paint.
-    Safari tab: visualViewport only. Do NOT use max-height:100dvh on PWA.
-  -->
+  <!-- PWA: set fillH before first paint. Do not use max-height: 100dvh. -->
   <script>
     (function () {
       try {
@@ -43,38 +39,21 @@
             (window.matchMedia("(display-mode: standalone)").matches ||
               window.matchMedia("(display-mode: fullscreen)").matches ||
               window.matchMedia("(display-mode: minimal-ui)").matches));
-        var vv = window.visualViewport;
+        if (!standalone) return;
         var iw = window.innerWidth || 0;
         var ih = window.innerHeight || 0;
         var sw = (window.screen && window.screen.width) || 0;
         var sh = (window.screen && window.screen.height) || 0;
         var screenMax = Math.max(sw, sh);
         var screenMin = Math.min(sw, sh);
-
-        if (standalone) {
-          r.classList.add("pwa-standalone");
-          var fillH = ih >= iw ? Math.max(ih, screenMax) : Math.max(ih, screenMin);
-          var extra = 0;
-          if (Math.min(iw, ih) >= 600 && screenMax < ih - 10) {
-            extra = 20;
-          }
-          r.style.setProperty("--pwa-fill-h", fillH + "px");
-          r.style.setProperty("--pwa-extra-b", extra + "px");
-          r.style.setProperty("--vv-top", "0px");
-          r.style.setProperty("--vv-left", "0px");
-          r.style.setProperty("--vv-w", iw + "px");
-          r.style.setProperty("--vv-h", fillH + extra + "px");
-        } else if (vv && vv.height > 40 && vv.width > 40) {
-          r.style.setProperty("--vv-top", Math.max(0, Math.round(vv.offsetTop) || 0) + "px");
-          r.style.setProperty("--vv-left", Math.max(0, Math.round(vv.offsetLeft) || 0) + "px");
-          r.style.setProperty("--vv-w", Math.round(vv.width) + "px");
-          r.style.setProperty("--vv-h", Math.round(vv.height) + "px");
-        } else {
-          r.style.setProperty("--vv-top", "0px");
-          r.style.setProperty("--vv-left", "0px");
-          r.style.setProperty("--vv-w", iw + "px");
-          r.style.setProperty("--vv-h", ih + "px");
+        var fillH = ih >= iw ? Math.max(ih, screenMax) : Math.max(ih, screenMin);
+        var extra = 0;
+        if (Math.min(iw, ih) >= 600 && screenMax < ih - 10) {
+          extra = 20;
         }
+        r.classList.add("pwa-standalone");
+        r.style.setProperty("--pwa-fill-h", fillH + "px");
+        r.style.setProperty("--pwa-extra-b", extra + "px");
       } catch (e) {}
     })();
   </script>
@@ -114,10 +93,6 @@
       --text-stat: 0.9rem;
       --text-label: 0.62rem;
       --app-gap: clamp(0.45rem, 1.5vmin, 0.7rem);
-      --vv-top: 0px;
-      --vv-left: 0px;
-      --vv-w: 100%;
-      --vv-h: 100%;
       --pwa-fill-h: 100%;
       --pwa-extra-b: 0px;
     }
@@ -146,7 +121,7 @@
       color: var(--text);
     }
 
-    /* Bug B: lock to screen fillH (Desktop note). No max-height:100dvh. */
+    /* PWA fillH. Avoid max-height: 100dvh. */
     html.pwa-standalone,
     html.pwa-standalone body {
       height: calc(var(--pwa-fill-h, 100%) + var(--pwa-extra-b, 0px));
@@ -622,11 +597,7 @@
       color: #f87171;
     }
 
-    /*
-      Custom overlay (not native <dialog showModal>).
-      Phone Safari’s modal dialog corrupts visualViewport → black strips
-      top/bottom after Apply until refresh. SuperMoon uses the same pattern.
-    */
+    /* Overlay, not <dialog> — showModal shifts Safari visualViewport. */
     .location-dialog {
       position: fixed;
       inset: 0;
@@ -684,7 +655,6 @@
 
     .location-map {
       width: 100%;
-      /* Solid px first — min(svh,…) alone is dropped if svh is unsupported → 0-height strip */
       height: calc(280px + 0.5in);
       min-height: calc(240px + 0.5in);
       flex: 0 0 auto;
@@ -721,12 +691,7 @@
       }
     }
 
-    /*
-      Leaflet tile seams: browser anti-aliasing leaves 1px gaps between OSM tiles
-      during fractional zoom transforms. Not drawn by us — tile boundaries.
-      Override Leaflet 1.9.4 plus-lighter (can paint a white grid) and nudge tiles
-      1px larger via JS (_initTile) so they overlap instead of gap.
-    */
+    /* Leaflet plus-lighter paints a white grid; overlap is applied in JS. */
     .leaflet-tile {
       mix-blend-mode: normal !important;
       border: none !important;
@@ -789,7 +754,6 @@
     @media (max-width: 767px) {
       .fit-stage {
         align-items: flex-start;
-        /* Bottom 0: pad lives on sheet/actions, not empty stage air (Bug B). */
         padding:
           max(0px, env(safe-area-inset-top, 0px))
           max(0.2rem, env(safe-area-inset-right, 0px))
@@ -1254,7 +1218,7 @@
       return 0;
     }
 
-    /** Refresh Bug B / Safari VV CSS vars + stage geometry. Does not force fluid layout. */
+    /** PWA fillH; clear any inline stage pin. */
     function pinViewportShell() {
       const root = document.documentElement;
       const stage = document.getElementById("fit-stage");
@@ -1424,7 +1388,7 @@
     function initLocationMap() {
       if (locationMap) return;
 
-      /* Leaflet #3575: grow each tile 1px so fractional-zoom anti-alias gaps close. */
+      /* Overlap tiles 1px so zoom seams don’t show. */
       if (!L.GridLayer.prototype._suctionNoGap) {
         const originalInitTile = L.GridLayer.prototype._initTile;
         L.GridLayer.include({
