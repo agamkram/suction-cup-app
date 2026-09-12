@@ -27,6 +27,57 @@
   <meta name="twitter:description" content="Live pressure at your location and suction cup pull force." />
   <meta name="twitter:image" content="https://air.markmaga.com/icon-512.png" />
   <title>The Weight of Air and the Suction Cup — live pressure and pull | Mark Maga</title>
+  <!--
+    Desktop iOS-full-bleed.txt — Bug B (PWA short layout viewport).
+    PWA: fillH = max(innerHeight, screen axis) BEFORE first paint.
+    Safari tab: visualViewport only. Do NOT use max-height:100dvh on PWA.
+  -->
+  <script>
+    (function () {
+      try {
+        var r = document.documentElement;
+        var n = window.navigator;
+        var standalone =
+          n.standalone === true ||
+          (window.matchMedia &&
+            (window.matchMedia("(display-mode: standalone)").matches ||
+              window.matchMedia("(display-mode: fullscreen)").matches ||
+              window.matchMedia("(display-mode: minimal-ui)").matches));
+        var vv = window.visualViewport;
+        var iw = window.innerWidth || 0;
+        var ih = window.innerHeight || 0;
+        var sw = (window.screen && window.screen.width) || 0;
+        var sh = (window.screen && window.screen.height) || 0;
+        var screenMax = Math.max(sw, sh);
+        var screenMin = Math.min(sw, sh);
+
+        if (standalone) {
+          r.classList.add("pwa-standalone");
+          var fillH = ih >= iw ? Math.max(ih, screenMax) : Math.max(ih, screenMin);
+          var extra = 0;
+          if (Math.min(iw, ih) >= 600 && screenMax < ih - 10) {
+            extra = 20;
+          }
+          r.style.setProperty("--pwa-fill-h", fillH + "px");
+          r.style.setProperty("--pwa-extra-b", extra + "px");
+          r.style.setProperty("--vv-top", "0px");
+          r.style.setProperty("--vv-left", "0px");
+          r.style.setProperty("--vv-w", iw + "px");
+          r.style.setProperty("--vv-h", fillH + extra + "px");
+        } else if (vv && vv.height > 40 && vv.width > 40) {
+          r.style.setProperty("--vv-top", Math.max(0, Math.round(vv.offsetTop) || 0) + "px");
+          r.style.setProperty("--vv-left", Math.max(0, Math.round(vv.offsetLeft) || 0) + "px");
+          r.style.setProperty("--vv-w", Math.round(vv.width) + "px");
+          r.style.setProperty("--vv-h", Math.round(vv.height) + "px");
+        } else {
+          r.style.setProperty("--vv-top", "0px");
+          r.style.setProperty("--vv-left", "0px");
+          r.style.setProperty("--vv-w", iw + "px");
+          r.style.setProperty("--vv-h", ih + "px");
+        }
+      } catch (e) {}
+    })();
+  </script>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" type="image/png" href="icon-192.png" />
   <link rel="apple-touch-icon" href="apple-touch-icon.png" />
@@ -63,6 +114,12 @@
       --text-stat: 0.9rem;
       --text-label: 0.62rem;
       --app-gap: clamp(0.45rem, 1.5vmin, 0.7rem);
+      --vv-top: 0px;
+      --vv-left: 0px;
+      --vv-w: 100%;
+      --vv-h: 100%;
+      --pwa-fill-h: 100%;
+      --pwa-extra-b: 0px;
     }
 
     * {
@@ -71,10 +128,13 @@
       padding: 0;
     }
 
-    html {
+    html,
+    body {
       height: 100%;
-      height: 100dvh;
+      min-height: 100%;
+      min-height: 100lvh;
       overflow: hidden;
+      overscroll-behavior: none;
       background: var(--bg);
       -webkit-text-size-adjust: 100%;
       text-size-adjust: 100%;
@@ -82,26 +142,52 @@
 
     body {
       margin: 0;
-      height: 100%;
-      height: 100dvh;
-      overflow: hidden;
       font-family: "DM Sans", system-ui, sans-serif;
-      background: var(--bg);
       color: var(--text);
+    }
+
+    /* Bug B: lock to screen fillH (Desktop note). No max-height:100dvh. */
+    html.pwa-standalone,
+    html.pwa-standalone body {
+      height: calc(var(--pwa-fill-h, 100%) + var(--pwa-extra-b, 0px));
+      min-height: calc(var(--pwa-fill-h, 100%) + var(--pwa-extra-b, 0px));
+      max-height: none;
     }
 
     .fit-stage {
       position: fixed;
-      inset: 0;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: auto;
+      width: 100%;
+      /* lvh paints behind Safari chrome; scale uses the visible box, not this height */
+      height: 100%;
+      height: 100lvh;
       overflow: hidden;
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: center;
+      background: var(--bg);
       padding:
-        max(0.25rem, env(safe-area-inset-top))
-        max(0.35rem, env(safe-area-inset-right))
-        max(0.25rem, env(safe-area-inset-bottom))
-        max(0.35rem, env(safe-area-inset-left));
+        max(0px, env(safe-area-inset-top, 0px))
+        max(0.25rem, env(safe-area-inset-right, 0px))
+        0
+        max(0.25rem, env(safe-area-inset-left, 0px));
+      box-sizing: border-box;
+    }
+
+    html.pwa-standalone .fit-stage {
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: auto;
+      width: 100%;
+      height: calc(var(--pwa-fill-h, 100%) + var(--pwa-extra-b, 0px));
+      padding-top: max(0px, env(safe-area-inset-top, 0px));
+      padding-right: max(0.25rem, env(safe-area-inset-right, 0px));
+      padding-bottom: 0;
+      padding-left: max(0.25rem, env(safe-area-inset-left, 0px));
     }
 
     .app {
@@ -113,7 +199,7 @@
       flex-direction: column;
       gap: var(--app-gap);
       transform: scale(1);
-      transform-origin: center center;
+      transform-origin: top center;
       will-change: transform;
     }
 
@@ -536,54 +622,145 @@
       color: #f87171;
     }
 
+    /*
+      Custom overlay (not native <dialog showModal>).
+      Phone Safari’s modal dialog corrupts visualViewport → black strips
+      top/bottom after Apply until refresh. SuperMoon uses the same pattern.
+    */
     .location-dialog {
-      border: none;
-      border-radius: 14px;
-      padding: 1rem;
-      background: var(--surface);
+      position: fixed;
+      inset: 0;
+      z-index: 400;
+      margin: 0;
+      padding:
+        max(0.75rem, env(safe-area-inset-top, 0px))
+        0.625rem
+        max(0.75rem, env(safe-area-inset-bottom, 0px));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+      background: rgba(0, 0, 0, 0.55);
       color: var(--text);
-      max-width: 480px;
-      width: calc(100% - 2rem);
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .location-dialog[hidden] {
+      display: none !important;
+    }
+
+    .location-dialog-card {
+      width: min(420px, 100%);
+      max-height: min(90vh, 640px);
+      margin: 0;
+      padding: 0.4rem 0.45rem 0.4rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
       box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+      overflow: hidden;
+      box-sizing: border-box;
     }
 
-    .location-dialog::backdrop {
-      background: rgba(0, 0, 0, 0.6);
-    }
-
-    .location-dialog h2 {
-      font-size: var(--text-stat);
-      margin-bottom: 0.25rem;
+    .location-dialog form {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      margin: 0;
+      min-height: 0;
     }
 
     .map-hint {
       font-size: var(--text-ui);
+      font-weight: 500;
       color: var(--muted);
-      margin-bottom: 0.55rem;
+      margin: 0 0 0.35rem;
+      line-height: 1.35;
+      flex: 0 0 auto;
     }
 
     .location-map {
       width: 100%;
-      height: 220px;
-      border-radius: 10px;
+      /* Solid px first — min(svh,…) alone is dropped if svh is unsupported → 0-height strip */
+      height: calc(280px + 0.5in);
+      min-height: calc(240px + 0.5in);
+      flex: 0 0 auto;
+      border-radius: 6px;
       overflow: hidden;
       border: 1px solid var(--border);
-      background: var(--bg);
+      background: #ddd;
+      touch-action: none;
+    }
+
+    .leaflet-container {
+      width: 100% !important;
+      height: 100% !important;
+      min-height: calc(240px + 0.5in);
+      background: #ddd;
+      font: inherit;
+      outline: none;
+    }
+
+    /* iPad / large tablets — wider card + taller map */
+    @media (min-width: 768px) {
+      .location-dialog-card {
+        width: min(720px, 100%);
+        max-height: min(92vh, 900px);
+      }
+
+      .location-map {
+        height: calc(420px + 0.5in);
+        min-height: 420px;
+      }
+
+      .leaflet-container {
+        min-height: 420px;
+      }
+    }
+
+    /*
+      Leaflet tile seams: browser anti-aliasing leaves 1px gaps between OSM tiles
+      during fractional zoom transforms. Not drawn by us — tile boundaries.
+      Override Leaflet 1.9.4 plus-lighter (can paint a white grid) and nudge tiles
+      1px larger via JS (_initTile) so they overlap instead of gap.
+    */
+    .leaflet-tile {
+      mix-blend-mode: normal !important;
+      border: none !important;
+      outline: none !important;
+    }
+
+    .map-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.4rem;
+      margin-top: 0.35rem;
+      flex: 0 0 auto;
+      min-width: 0;
     }
 
     .map-coords {
-      margin-top: 0.5rem;
+      margin: 0;
       font-size: var(--text-ui);
       font-weight: 600;
       color: var(--accent);
-      text-align: center;
+      text-align: left;
+      font-variant-numeric: tabular-nums;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .dialog-actions {
       display: flex;
-      gap: 0.5rem;
+      gap: 0.3rem;
       justify-content: flex-end;
-      margin-top: 0.5rem;
+      flex: 0 0 auto;
     }
 
     .primary-btn,
@@ -591,9 +768,10 @@
       font: inherit;
       font-size: var(--text-ui);
       font-weight: 600;
-      padding: 0.5rem 0.9rem;
-      border-radius: 8px;
+      padding: 0.22rem 0.55rem;
+      border-radius: 5px;
       cursor: pointer;
+      touch-action: manipulation;
     }
 
     .primary-btn {
@@ -611,17 +789,22 @@
     @media (max-width: 767px) {
       .fit-stage {
         align-items: flex-start;
-        /* No bottom safe-area pad: that was leaving empty space while cards clipped. */
+        /* Bottom 0: pad lives on sheet/actions, not empty stage air (Bug B). */
         padding:
-          calc(env(safe-area-inset-top, 0px) + 0.1rem)
-          max(0.25rem, env(safe-area-inset-right))
+          max(0px, env(safe-area-inset-top, 0px))
+          max(0.2rem, env(safe-area-inset-right, 0px))
           0
-          max(0.25rem, env(safe-area-inset-left));
+          max(0.2rem, env(safe-area-inset-left, 0px));
+      }
+
+      html.pwa-standalone .fit-stage {
+        padding-top: max(0px, env(safe-area-inset-top, 0px));
+        padding-bottom: 0;
       }
 
       .app {
         transform-origin: top center;
-        padding-bottom: 0.35rem;
+        padding: 0.35rem 0.45rem 0.35rem;
       }
     }
 
@@ -629,17 +812,17 @@
     @media (min-width: 768px) and (max-width: 1366px) and (hover: none),
       (min-width: 768px) and (max-width: 1366px) and (pointer: coarse) {
       .fit-stage {
-        align-items: center;
+        align-items: flex-start;
         justify-content: center;
         padding:
           max(0.3rem, env(safe-area-inset-top, 0px))
           max(0.4rem, env(safe-area-inset-right, 0px))
-          max(0.3rem, env(safe-area-inset-bottom, 0px))
+          0
           max(0.4rem, env(safe-area-inset-left, 0px));
       }
 
       .app {
-        transform-origin: center center;
+        transform-origin: top center;
         padding: 0.55rem 0.7rem 0.55rem;
         --app-gap: 0.55rem;
         --text-title: 1.35rem;
@@ -829,21 +1012,31 @@
   </div>
   </div>
 
-  <dialog id="location-dialog" class="location-dialog">
-    <form method="dialog" id="location-form">
-      <h2>Choose location</h2>
-      <p class="map-hint">Tap or click the map to place a pin</p>
-      <div id="location-map" class="location-map" role="application" aria-label="Location map"></div>
-      <p class="map-coords" id="map-coords">—</p>
-      <div class="dialog-actions">
-        <button type="button" class="secondary-btn" id="cancel-location">Cancel</button>
-        <button type="submit" class="primary-btn">Apply</button>
-      </div>
-    </form>
-  </dialog>
+  <div
+    id="location-dialog"
+    class="location-dialog"
+    hidden
+    role="dialog"
+    aria-modal="true"
+    aria-label="Choose location on map"
+  >
+    <div class="location-dialog-card">
+      <form id="location-form">
+        <p class="map-hint">Tap or click the map to place a pin</p>
+        <div id="location-map" class="location-map" role="application" aria-label="Location map"></div>
+        <div class="map-footer">
+          <p class="map-coords" id="map-coords">—</p>
+          <div class="dialog-actions">
+            <button type="button" class="secondary-btn" id="cancel-location">Cancel</button>
+            <button type="submit" class="primary-btn">Apply</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="fit-to-screen.js?v=14"></script>
+  <script src="fit-to-screen.js?v=19"></script>
   <script>
     const HPA_TO_PSI = 0.0145037738;
     const IDEAL_SEAL_PCT = 100;
@@ -1020,6 +1213,79 @@
     const TOUCH_ARTBOARD_W = 400;
     const DESKTOP_ARTBOARD_W = 560;
 
+    function isStandaloneDisplay() {
+      try {
+        return (
+          window.navigator.standalone === true ||
+          window.matchMedia("(display-mode: standalone)").matches ||
+          window.matchMedia("(display-mode: fullscreen)").matches ||
+          window.matchMedia("(display-mode: minimal-ui)").matches
+        );
+      } catch (_) {
+        return false;
+      }
+    }
+
+    function pwaFillHeightPx() {
+      const iw = window.innerWidth || 0;
+      const ih = window.innerHeight || 0;
+      const sw = window.screen?.width || 0;
+      const sh = window.screen?.height || 0;
+      const screenMax = Math.max(sw, sh);
+      const screenMin = Math.min(sw, sh);
+      return ih >= iw ? Math.max(ih, screenMax) : Math.max(ih, screenMin);
+    }
+
+    function pwaExtraBottomPx() {
+      const iw = window.innerWidth || 0;
+      const ih = window.innerHeight || 0;
+      const sw = window.screen?.width || 0;
+      const sh = window.screen?.height || 0;
+      const screenMax = Math.max(sw, sh);
+      if (Math.min(iw, ih) >= 600 && screenMax < ih - 10) {
+        const probe = document.createElement("div");
+        probe.style.cssText =
+          "position:fixed;visibility:hidden;padding-bottom:env(safe-area-inset-bottom,0px)";
+        document.body.appendChild(probe);
+        const pb = parseFloat(getComputedStyle(probe).paddingBottom) || 0;
+        probe.remove();
+        return Math.max(pb, 20);
+      }
+      return 0;
+    }
+
+    /** Refresh Bug B / Safari VV CSS vars + stage geometry. Does not force fluid layout. */
+    function pinViewportShell() {
+      const root = document.documentElement;
+      const stage = document.getElementById("fit-stage");
+      if (!stage) return;
+      const standalone = isStandaloneDisplay();
+
+      stage.style.top = "";
+      stage.style.left = "";
+      stage.style.right = "";
+      stage.style.bottom = "";
+      stage.style.width = "";
+      stage.style.height = "";
+
+      if (standalone) {
+        const fillH = pwaFillHeightPx();
+        const extra = pwaExtraBottomPx();
+        root.classList.add("pwa-standalone");
+        root.style.setProperty("--pwa-fill-h", `${fillH}px`);
+        root.style.setProperty("--pwa-extra-b", `${extra}px`);
+        return;
+      }
+
+      root.classList.remove("pwa-standalone");
+      root.style.removeProperty("--pwa-fill-h");
+      root.style.removeProperty("--pwa-extra-b");
+    }
+
+    function closeLocationDialog() {
+      locationDialog.hidden = true;
+    }
+
     const fit = FitToScreen.create({
       phoneMaxWidth: 480,
       wideAppWidth: DESKTOP_ARTBOARD_W,
@@ -1158,13 +1424,32 @@
     function initLocationMap() {
       if (locationMap) return;
 
+      /* Leaflet #3575: grow each tile 1px so fractional-zoom anti-alias gaps close. */
+      if (!L.GridLayer.prototype._suctionNoGap) {
+        const originalInitTile = L.GridLayer.prototype._initTile;
+        L.GridLayer.include({
+          _suctionNoGap: true,
+          _initTile(tile) {
+            originalInitTile.call(this, tile);
+            const size = this.getTileSize();
+            tile.style.width = `${size.x + 1}px`;
+            tile.style.height = `${size.y + 1}px`;
+          },
+        });
+      }
+
       locationMap = L.map("location-map", {
         zoomControl: true,
         attributionControl: true,
+        fadeAnimation: false,
+        zoomAnimation: false,
+        markerZoomAnimation: false,
       });
 
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 19,
+        updateWhenZooming: false,
+        keepBuffer: 2,
         attribution:
           '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       }).addTo(locationMap);
@@ -1174,20 +1459,28 @@
       });
     }
 
+    function refreshLocationMapSize() {
+      if (!locationMap) return;
+      locationMap.invalidateSize({ pan: false });
+    }
+
     function openLocationDialog() {
       const startLat = state.lat ?? 39.8;
       const startLon = state.lon ?? -98.5;
       pickLat = startLat;
       pickLon = startLon;
       updateMapCoordsDisplay();
-      locationDialog.showModal();
+      locationDialog.hidden = false;
 
       requestAnimationFrame(() => {
         initLocationMap();
         const zoom = state.lat != null ? 8 : 4;
         locationMap.setView([startLat, startLon], zoom);
         setMapPin(startLat, startLon);
-        locationMap.invalidateSize();
+        refreshLocationMapSize();
+        requestAnimationFrame(refreshLocationMapSize);
+        setTimeout(refreshLocationMapSize, 50);
+        setTimeout(refreshLocationMapSize, 200);
       });
     }
 
@@ -1208,13 +1501,23 @@
 
     locateBtn.addEventListener("click", () => requestLocation(false));
     chooseLocationBtn.addEventListener("click", openLocationDialog);
-    cancelLocationBtn.addEventListener("click", () => locationDialog.close());
+    cancelLocationBtn.addEventListener("click", () => closeLocationDialog());
 
     locationForm.addEventListener("submit", (event) => {
       event.preventDefault();
       if (Number.isFinite(pickLat) && Number.isFinite(pickLon)) {
         loadLocation(pickLat, pickLon);
-        locationDialog.close();
+        closeLocationDialog();
+      }
+    });
+
+    locationDialog.addEventListener("click", (event) => {
+      if (event.target === locationDialog) closeLocationDialog();
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !locationDialog.hidden) {
+        closeLocationDialog();
       }
     });
 
@@ -1259,17 +1562,30 @@
     }
 
     renderPressureArrows();
-    fit.bindViewportListeners({ bindOrientation: false });
+    pinViewportShell();
+    fit.bindViewportListeners({ bindOrientation: false, bindVisualViewport: true });
+    window.addEventListener("resize", () => {
+      pinViewportShell();
+    });
 
     window.addEventListener("pageshow", (event) => {
       if (!event.persisted) return;
+      pinViewportShell();
       fit.resetNaturalSize();
       fit.scheduleFitToScreen(true);
     });
 
     window.addEventListener("orientationchange", () => {
+      pinViewportShell();
       fit.resetNaturalSize();
-      setTimeout(() => fit.scheduleFitToScreen(true), 100);
+      setTimeout(() => {
+        pinViewportShell();
+        fit.scheduleFitToScreen(true);
+      }, 100);
+      setTimeout(() => {
+        pinViewportShell();
+        fit.scheduleFitToScreen(true);
+      }, 300);
     });
 
     fit.bootLayout().then(() => requestLocation(true));

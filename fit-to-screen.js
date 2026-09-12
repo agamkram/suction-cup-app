@@ -59,6 +59,19 @@
       return availW <= phoneMaxWidth;
     }
 
+    function isStandaloneDisplay() {
+      try {
+        return (
+          root.matchMedia("(display-mode: standalone)").matches ||
+          root.matchMedia("(display-mode: fullscreen)").matches ||
+          root.matchMedia("(display-mode: minimal-ui)").matches ||
+          root.navigator.standalone === true
+        );
+      } catch (_) {
+        return false;
+      }
+    }
+
     function layoutFor(availW, availH) {
       if (getLayoutName) return getLayoutName(availW, availH);
       return isPhoneLayout(availW) ? "phone" : "wide";
@@ -75,40 +88,39 @@
 
     function syncFitStageViewport() {
       if (!ensureElements()) return;
+      // Stage size stays CSS (lvh / fillH). Do not pin short visualViewport.
+      stage.style.top = "";
+      stage.style.left = "";
+      stage.style.right = "";
+      stage.style.bottom = "";
+      stage.style.width = "";
+      stage.style.height = "";
+    }
+
+    /** Visible box for scale. Stage may be 100lvh (taller than Safari chrome). */
+    function visibleAvailSize() {
+      if (!ensureElements()) return { w: 0, h: 0 };
+      const stageW = stage.clientWidth;
+      const stageH = stage.clientHeight;
+      if (isStandaloneDisplay()) return { w: stageW, h: stageH };
       const vv = root.visualViewport;
-      // Use visualViewport on phone *and* tablet widths (not only ≤phoneMaxWidth).
-      // iPad was skipping this and under-measuring available height for scale-up.
-      const useVv =
-        vv &&
-        (isPhoneLayout(root.innerWidth) ||
-          (root.innerWidth <= 1366 &&
-            (root.navigator?.maxTouchPoints > 0 ||
-              root.matchMedia?.("(pointer: coarse)")?.matches ||
-              root.matchMedia?.("(hover: none)")?.matches)));
-      if (!useVv) {
-        stage.style.top = "";
-        stage.style.left = "";
-        stage.style.width = "";
-        stage.style.height = "";
-        return;
-      }
-      const top = vv.offsetTop;
-      const left = vv.offsetLeft;
-      const width = vv.width;
-      // visualViewport.height often ends above the home-indicator band (~30px /
-      // 5/16" on iPhone). That left empty screen under a correctly scaled app,
-      // so scale tweaks could not close the gap. Fill down to the layout bottom.
-      const height = Math.max(vv.height, root.innerHeight - top);
-      stage.style.top = `${top}px`;
-      stage.style.left = `${left}px`;
-      stage.style.width = `${width}px`;
-      stage.style.height = `${height}px`;
+      const visW =
+        vv && vv.width > 40 ? Math.round(vv.width) : Math.round(root.innerWidth || stageW);
+      const visH =
+        vv && vv.height > 40
+          ? Math.round(vv.height)
+          : Math.round(root.innerHeight || stageH);
+      return {
+        w: Math.min(stageW || visW, visW),
+        h: Math.min(stageH || visH, visH),
+      };
     }
 
     function viewportSizeMatchesFit() {
       if (!ensureElements() || !layoutReady) return false;
       syncFitStageViewport();
-      return stage.clientHeight === fitAvailH && stage.clientWidth === fitAvailW;
+      const vis = visibleAvailSize();
+      return vis.h === fitAvailH && vis.w === fitAvailW;
     }
 
     function shouldScaleLayout(layout, availW, availH) {
@@ -147,8 +159,9 @@
 
       syncFitStageViewport();
 
-      const availH = stage.clientHeight;
-      const availW = stage.clientWidth;
+      const vis = visibleAvailSize();
+      const availH = vis.h;
+      const availW = vis.w;
       const viewportChanged = availH !== fitAvailH || availW !== fitAvailW;
       const layout = layoutFor(availW, availH);
       const layoutChanged = layout !== fitLayout;
@@ -205,14 +218,23 @@
 
       function stageLimits() {
         const stageRect = stage.getBoundingClientRect();
+        const vis = visibleAvailSize();
+        const visTop = 0;
+        const visLeft = 0;
+        const visBottom = vis.h;
+        const visRight = vis.w;
+        const limitTop = Math.max(stageRect.top + padT, visTop);
+        const limitBottom = Math.min(stageRect.bottom - padB - SAFETY, visBottom - SAFETY);
+        const limitLeft = Math.max(stageRect.left + padL, visLeft);
+        const limitRight = Math.min(stageRect.right - padR - 1, visRight - 1);
         return {
           stageRect,
-          limitTop: stageRect.top + padT,
-          limitBottom: stageRect.bottom - padB - SAFETY,
-          limitLeft: stageRect.left + padL,
-          limitRight: stageRect.right - padR - 1,
-          contentH: Math.max(1, stageRect.height - padT - padB - SAFETY),
-          contentW: Math.max(1, stageRect.width - padL - padR - 1),
+          limitTop,
+          limitBottom,
+          limitLeft,
+          limitRight,
+          contentH: Math.max(1, limitBottom - limitTop),
+          contentW: Math.max(1, limitRight - limitLeft),
         };
       }
 
@@ -359,9 +381,12 @@
       if (listenersBound) return;
       listenersBound = true;
       const bindOrientation = options.bindOrientation !== false;
+      const bindVisualViewport = options.bindVisualViewport === true;
       root.addEventListener("resize", onViewportResize);
       if (bindOrientation) root.addEventListener("orientationchange", onOrientationChange);
-      root.visualViewport?.addEventListener("resize", onViewportResize);
+      if (bindVisualViewport) {
+        root.visualViewport?.addEventListener("resize", onViewportResize);
+      }
     }
 
     return {
